@@ -26,7 +26,7 @@ We combine San Francisco 311 service request data, American Community Survey dat
 
 -------------------------------------------------------------------------------------------------------------
 
-** Integration Goal **
+**Integration Goal**
 
 When we look at all these different datasets, we can see if the service response differs across income levels taking into consideration other factors like type of request, size of the population and weather of the area. 
 
