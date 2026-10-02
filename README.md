@@ -35,53 +35,53 @@ We will join 311 latitude and longitude to Census tracts, then use the tract GEO
 
 **Setup Instructions (Locally)**
 
-**Prerequisites**
-
-- Python 3.11+
-- A GCP service account key with access to PROJECT/BUCKET/DATASET
-- Any source API keys listed in the table below
-
-**1. Clone the repository**
+1. Clone the repository 
 ```bash
-git clone https://github.com/gursimratgrewal/311_income_response.git
-
-cd 311_income_response
+   git clone https://github.com/gursimratgrewal/311_income_response.git
+   cd 311_income_response
 ```
+   
 
-**2 Configure environment variables**
 
-Copy the example file and fill in your own values:
-
+2. Create and activate virtual environment
 ```bash
-cp .env_template .env
+   python -m venv .venv
+   source venv/bin/activate
 ```
 
-| Variable | Description | Example |
-| --- | --- | --- |
-| `GCP_SERVICE_ACCOUNT_KEY` | Absolute path to your service account JSON | `/Users/you/.ssh/key.json` |
-| `SOURCE_API_KEY` | Key for SOURCE NAME (free tier) | `abc123...` |
-| `API_SERVICE_URL` | Where the web app reaches the API | `http://api-server:8000` |
-
-
-**3 How to call your endpoint**
-
-To start the API server,
-```python
-fastapi run mycode.py
+3. Install requirements
+```bash
+  pip install -r requirements.txt
 ```
 
-```python
-requests.post("http://localhost:8000/something", json=something)
+4. Create a .env file in the project root and add required variables.
 ```
-Make sure it writes the data in the bucket.
+  STORAGE_BACKEND=gcs
+  GCS_BUCKET_NAME=gcsbucketname
+  GOOGLE_APPLICATION_CREDENTIALS=path/to/your-service-account-key.json
+  LOCAL_OUTPUT_DIR=./data
+  RAW_PREFIX=raw
+  HTTP_TIMEOUT_SECONDS=120
+   
+
+```
+
+5. Run the project
+```bash
+ python main.py
+```
 
 
 **Repository Structure**
 
-.
-├── your_code.py
-├── .env_template
-└── README.md
+```
+311_income_response/
+├── .env               
+├── .gitignore         
+├── main.py            
+├── requirements.txt   
+└── README.md         
+```
 
 
 
