@@ -2,11 +2,11 @@
 **Team Members**
 |  Name        |  GithubID       |    Task                |
 |--------------|-----------------|------------------------|
-| Yunfan       | 399441537       |  PDF contract and documentation|
-| Gursimrat    | gursimratgrewal |  Git setup and readme  |
-| Eric         | E_Smith_359     | GCP setup and git branches|
-| Vansh        | VanshS29362     | Python: Fetch API and data|
-| Prashasti    | Prashasti9      | Python: Parse and store into GCP|
+| Yunfan       | 399441537       |  PDF contract and documentation.Configure reusable image, create Cloud Scheduler job for AB which collect data regularly, with deployment instructions|
+| Gursimrat    | gursimratgrewal |  Git setup and readme. Fetch <file> data source, provide to C with defined data type, build and deploy Cloud Run services  |
+| Eric         | E_Smith_359     | GCP setup and git branches. Create web service, display data with dashboard, build and deploy Cloud Run services|
+| Vansh        | VanshS29362     | Python: Fetch API and data. Fetch <api> data source, provide to C with defined data type, build and deploy Cloud Run services|
+| Prashasti    | Prashasti9      | Python: Parse and store into GCP. Define public data type, receive and clean/transform, store into gcp, define functions used by dashboard, build and deploy Cloud Run services|
 
 
 ----------------------------------------------------------------------------------------------------------
