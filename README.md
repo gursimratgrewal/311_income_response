@@ -66,7 +66,7 @@ We will join 311 latitude and longitude to Census tracts, then use the tract GEO
 
 ```
 
-6. Run the project
+5. Run the project
 ```bash
  python main.py
 ```
