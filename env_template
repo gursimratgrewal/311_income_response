@@ -1,0 +1,80 @@
+# Copy this file to .env and fill in your values:  cp .env_template .env
+# Don't commit .env - since it has you information. 
+
+# Storage:
+
+# "gcs" uploads to our Google Cloud bucket.
+# "local" saves files to LOCAL_OUTPUT_DIR instead, good for testing without GCP.
+STORAGE_BACKEND=gcs
+
+# Our GCP project ID (not the display name). Run `gcloud projects list` to find it.
+GCP_PROJECT_ID=
+
+# Bucket name, without "gs://".
+GCS_BUCKET_NAME=
+
+# Path to a service account key file. Leave blank if you ran:
+#   gcloud auth application-default login
+GOOGLE_APPLICATION_CREDENTIALS=
+
+# Where files go in local mode.
+LOCAL_OUTPUT_DIR=./data
+
+# Top folder inside the bucket for raw data.
+RAW_PREFIX=raw
+
+# How long to wait on an API before giving up (seconds).
+HTTP_TIMEOUT_SECONDS=120
+
+
+# SF 311 Cases (DataSF):
+
+# API endpoint for the 311 dataset. No need to change this.
+SF311_BASE_URL=https://data.sfgov.org/resource/vw6y-z8j6.json
+
+# Optional. Works without it, but requests get throttled more.
+# Get one free at data.sfgov.org -> Developer Settings -> Create New App Token.
+SF311_APP_TOKEN=
+
+# Rows per request (max 50000). Lower it if you get timeouts.
+SF311_PAGE_SIZE=50000
+
+
+# Census (ACS 5-Year + tract boundaries): 
+
+# Required. Free key: https://api.census.gov/data/key_signup.html
+# You have to click the activation link in the email before it works.
+CENSUS_API_KEY=
+
+# Which ACS 5-year release to pull. 2023 covers 2019-2023.
+ACS_YEAR=2023
+
+# San Francisco = state 06, county 075.
+ACS_STATE_FIPS=06
+ACS_COUNTY_FIPS=075
+
+# Columns to pull per tract:
+#   B19013_001E = median household income
+#   B19013_001M = margin of error for that income
+#   B01003_001E = total population
+ACS_VARIABLES=NAME,B19013_001E,B19013_001M,B01003_001E
+
+# Year of the tract boundary map (used to match 311 lat/lon to a tract).
+# Keep it the same as ACS_YEAR.
+TIGER_YEAR=2023
+
+
+# Weather (Open-Meteo, no key needed):
+
+# API endpoint. No need to change this.
+OPEN_METEO_BASE_URL=https://historical-forecast-api.open-meteo.com/v1/forecast
+
+# Hourly weather fields to pull.
+OPEN_METEO_HOURLY_VARS=temperature_2m,relative_humidity_2m,precipitation,rain,weather_code,wind_speed_10m
+
+# Spots in SF to get weather for, as "lat,lon" separated by semicolons.
+# Default is a 3x3 grid over the city.
+WEATHER_POINTS=37.795,-122.495;37.795,-122.445;37.795,-122.405;37.760,-122.495;37.760,-122.445;37.760,-122.400;37.725,-122.480;37.725,-122.440;37.725,-122.395
+
+# Keep this as SF local time so weather lines up with 311 timestamps.
+TIMEZONE=America/Los_Angeles

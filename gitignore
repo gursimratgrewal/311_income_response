@@ -1,0 +1,18 @@
+# Keep certain files off GitHub for safety reasons
+.env
+*service-account*.json
+*-credentials.json
+
+# Local test output
+data/
+
+# Python junk
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS / editor files
+.DS_Store
+.vscode/
+.idea/
