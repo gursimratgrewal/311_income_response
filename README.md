@@ -55,6 +55,11 @@ We will join 311 latitude and longitude to Census tracts, then use the tract GEO
 ```
 
 4. Create a .env file in the project root and add required variables.
+
+  Create .env file from the template and fill in your own values
+  ```bash
+  cp .env_template.env
+  ```
 ```
   STORAGE_BACKEND=gcs
   GCS_BUCKET_NAME=gcsbucketname
@@ -76,11 +81,12 @@ We will join 311 latitude and longitude to Census tracts, then use the tract GEO
 
 ```
 311_income_response/
-├── .env               
+├── .env_template      
 ├── .gitignore         
 ├── main.py            
+├── process_sf311.py  
 ├── requirements.txt   
-└── README.md         
+└── README.md          
 ```
 
 
