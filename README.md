@@ -58,7 +58,7 @@ We will join 311 latitude and longitude to Census tracts, then use the tract GEO
 
   Create .env file from the template and fill in your own values
   ```bash
-  cp .env_template.env
+  cp .env_template .env
   ```
 ```
   STORAGE_BACKEND=gcs
@@ -71,22 +71,40 @@ We will join 311 latitude and longitude to Census tracts, then use the tract GEO
 
 ```
 
-5. Run the project
+5. Create a GCP service account key (needed for process_sf311.py)
+   - GCP Console -> IAM & Admin -> Service Accounts -> choose the account -> Keys -> Add key -> Create new key -> JSON
+   - Save the .json file OUTSIDE this repo folder (e.g. ~/.ssh/)
+   - Add its path to your .env:
+```
+  GCP_SERVICE_ACCOUNT_KEY=/path/to/your-key.json
+```
+
+6. Run the project
 ```bash
  fastapi dev main.py
 ```
+
+7. Run Part E - clean the 311 data (process_sf311.py)
+```bash
+ fastapi dev process_sf311.py --port=8001
+```
+Open http://127.0.0.1:8001/docs -> POST /process/sf311 -> Try it out, and paste the raw file path returned by /ingest/sf311, e.g.
+```json
+{"file_name": "raw/sf311/requested_2026-09-01_to_2026-09-02/run_20261003T175316Z/part-00001.ndjson"}
+```
+This reads the raw file from the bucket, cleans it, and saves it under processed/sf311/... in the same bucket.
 
 
 **Repository Structure**
 
 ```
 311_income_response/
-├── .env_template      
-├── .gitignore         
-├── main.py            
-├── process_sf311.py  
-├── requirements.txt   
-└── README.md          
+├── .env_template      # settings to copy into your own .env
+├── .gitignore
+├── main.py            # collects 311, ACS, census tracts, weather -> raw/ in the bucket
+├── process_sf311.py   # cleans raw 311 data -> processed/ in the bucket
+├── requirements.txt
+└── README.md
 ```
 
 
