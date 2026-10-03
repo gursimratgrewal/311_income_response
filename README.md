@@ -46,7 +46,7 @@ We will join 311 latitude and longitude to Census tracts, then use the tract GEO
 2. Create and activate virtual environment
 ```bash
    python -m venv .venv
-   source venv/bin/activate
+   source .venv/bin/activate
 ```
 
 3. Install requirements
@@ -68,7 +68,7 @@ We will join 311 latitude and longitude to Census tracts, then use the tract GEO
 
 5. Run the project
 ```bash
- python main.py
+ fastapi dev main.py
 ```
 
 
