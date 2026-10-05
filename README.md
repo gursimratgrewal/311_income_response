@@ -51,7 +51,7 @@ We will join 311 latitude and longitude to Census tracts, then use the tract GEO
 
 3. Install requirements
 ```bash
-  pip install -r requirements.txt
+  pip install -r api/requirements.txt
 ```
 
 4. Create a .env file in the project root and add required variables.
@@ -81,6 +81,7 @@ We will join 311 latitude and longitude to Census tracts, then use the tract GEO
 
 6. Run the project
 ```bash
+ cd api
  fastapi dev main.py
 ```
 
@@ -99,12 +100,17 @@ This reads the raw file from the bucket, cleans it, and saves it under processed
 
 ```
 311_income_response/
-├── .env_template      # settings to copy into your own .env
-├── .gitignore
-├── main.py            # collects 311, ACS, census tracts, weather -> raw/ in the bucket
-├── process_sf311.py   # cleans raw 311 data -> processed/ in the bucket
-├── requirements.txt
-└── README.md
+├── api/
+│   ├── Dockerfile          # Container setting up  for the API and data pipeline
+│   ├── main.py             # To fetches data from the API
+│   ├── process_sf311.py    # Parses, cleans, and stores SF 311 data
+│   └── requirements.txt    # Python requirements for the API
+├── streamlit/
+│   ├── Dockerfile          # Container setup for the Streamlit dashboard
+│   └── user_definition.py  # Configuration for the dashboard
+├── .env_template           # Template for environment variables (copy to .env)
+├── .gitignore              # Files Git should ignore
+└── README.md               # Project documentation
 ```
 
 
