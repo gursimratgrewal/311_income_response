@@ -2,11 +2,11 @@
 **Team Members**
 |  Name        |  GithubID       |    Task                |
 |--------------|-----------------|------------------------|
-| Yunfan       | 399441537       |  PDF contract and documentation.Configure reusable image, create Cloud Scheduler job for AB which collect data regularly, with deployment instructions|
-| Gursimrat    | gursimratgrewal |  Git setup and readme. Fetch <file> data source, provide to C with defined data type, build and deploy Cloud Run services  |
-| Eric         | E_Smith_359     | GCP setup and git branches. Create web service, display data with dashboard, build and deploy Cloud Run services|
-| Vansh        | VanshS29362     | Python: Fetch API and data. Fetch <api> data source, provide to C with defined data type, build and deploy Cloud Run services|
-| Prashasti    | Prashasti9      | Python: Parse and store into GCP. Define public data type, receive and clean/transform, store into gcp, define functions used by dashboard, build and deploy Cloud Run services|
+| Yunfan       | 399441537       |  contract, docker, Cloud Scheduler job with deployment instructions|
+| Gursimrat    | gursimratgrewal |  github repo, README.md, complete code fetching <file> data source, Cloud Run services  |
+| Eric         | E_Smith_359     | gcp project and bucket, dashboard with graph/chart, Cloud Run services|
+| Vansh        | VanshS29362     | draft code fetching api/file data source, complete code fetching <api> data source, Cloud Run services|
+| Prashasti    | Prashasti9      | define data structure, code receive and parse/transform data, store into gcp, define functions used by dashboard, Cloud Run services|
 
 
 ----------------------------------------------------------------------------------------------------------
@@ -54,9 +54,13 @@ We will join 311 latitude and longitude to Census tracts, then use the tract GEO
   pip install -r api/requirements.txt
 ```
 
-4. Create a .env file in the project root and add required variables.
-
-  Create .env file from the template and fill in your own values
+4. Create and set up environment variables.
+   
+  Create your GCP service account key by following these instructions:-
+  
+  GCP Console → IAM & Admin → Service Accounts → choose the account → Keys → Add key → Create new key → JSON
+  
+  Create your .env file from the template and fill in your own values
   ```bash
   cp .env_template .env
   ```
@@ -67,25 +71,16 @@ We will join 311 latitude and longitude to Census tracts, then use the tract GEO
   LOCAL_OUTPUT_DIR=./data
   RAW_PREFIX=raw
   HTTP_TIMEOUT_SECONDS=120
-   
-
 ```
 
-5. Create a GCP service account key (needed for process_sf311.py)
-   - GCP Console -> IAM & Admin -> Service Accounts -> choose the account -> Keys -> Add key -> Create new key -> JSON
-   - Save the .json file OUTSIDE this repo folder (e.g. ~/.ssh/)
-   - Add its path to your .env:
-```
-  GCP_SERVICE_ACCOUNT_KEY=/path/to/your-key.json
-```
 
-6. Run the project
+5. Run the project
 ```bash
  cd api
  fastapi dev main.py
 ```
 
-7. Run Part E - clean the 311 data (process_sf311.py)
+6. Run Part E - clean the 311 data (process_sf311.py)
 ```bash
  fastapi dev process_sf311.py --port=8001
 ```
