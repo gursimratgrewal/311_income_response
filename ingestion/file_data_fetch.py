@@ -1,6 +1,7 @@
 """ FASTAPI that downloads the SF 311 Cases data CSV file and it stores in the GCS."""
 
-import os 
+import os
+import io
 import pandas as pd
 import requests
 from dotenv import load_dotenv
@@ -19,26 +20,26 @@ project_id = os.getenv("GCP_PROJECT_ID")
 bucket_name = os.getenv("GCP_BUCKET_NAME")
 raw_prefix = os.getenv("RAW_PREFIX", "raw")
 
-FILE_URL= "https://data.sfgov.org/api/views/vw6y-z8j6/rows.csv?accessType=DOWNLOAD"
-size = 500000
+FILE_URL = "https://data.sfgov.org/resource/vw6y-z8j6.csv"
+
 
 HTTP_TIMEOUT_SECONDS = int(os.getenv("HTTP_TIMEOUT_SECONDS", "120"))
 
 Column_names = {
-   "CaseID": "service_request_id",
-    "Opened": "created_date",
-    "Closed": "closed_date",
-    "Updated": "updated_date",
-    "Status": "status",
-    "Responsible Agency": "responsible_agency",
-    "Category": "service_category",
-    "Request Type": "request_type",
-    "Supervisor District": "supervisor_dist",
-    "Analysis Neighborhood": "neighborhood",
-    "Police District": "police_dist",
-    "Latitude": "lat",
-    "Longitude": "lng",
-    "Source": "source",
+    "service_request_id": "service_request_id",
+    "requested_datetime": "created_date",
+    "closed_date": "closed_date",
+    "updated_datetime": "updated_date",
+    "status_description": "status",
+    "agency_responsible": "responsible_agency",
+    "service_name": "service_category",
+    "service_subtype": "request_type",
+    "supervisor_district": "supervisor_dist",
+    "analysis_neighborhood": "neighborhood",
+    "police_district": "police_dist",
+    "lat": "lat",
+    "long": "lng",
+    "source": "source",
 }
 Dates = ["created_date", "closed_date", "updated_date"]
          
@@ -57,7 +58,7 @@ def clean(chunk):
     """Rename columns,validating each rows and coverting dates."""
     chunk = chunk.rename(columns=Column_names)
     for date_col in Dates:
-        chunk[date_col] = pd.to_datetime(chunk[date_col], errors='coerce', format="%m/%d/%Y %I:%M:%S %p")
+        chunk[date_col] = pd.to_datetime(chunk[date_col], errors='coerce', format="ISO8601")
     non_empty = chunk.notna()
     chunk = chunk.astype(object).where(non_empty, None)
 
@@ -77,40 +78,36 @@ def root():
 
 @app.get("/fetch", response_model=FetchData)
 def fetch_sf311_data(start_date: date | None = None, end_date: date | None = None):
-    """Download the SF 311 data CSV and keep cases opened between start date and end date and upload to GCS."""
+    """Download SF 311 cases opened between start_date and end_date as a CSV file,
+    """
     if end_date is None:
-        end_date = date.today() - timedelta(days=1)
+        end_date = date.today() - timedelta(days=1)  
     if start_date is None:
-        start_date = end_date - timedelta(days=29)
+        start_date = end_date - timedelta(days=1)   
+    if start_date > end_date:
+        raise HTTPException(status_code=400, detail="start_date must be before end_date")
     if not bucket_name:
-        raise HTTPException(status_code=500, detail="Bucket name not configured")
-    response = requests.get(FILE_URL, stream=True, timeout=HTTP_TIMEOUT_SECONDS)
-    if response.status_code != 200:
-        raise HTTPException(status_code=500, detail="Failed to fetch data from source")
+        raise HTTPException(status_code=500, detail="Bucket name is not configured")
 
-   
-    #data = io.BytesIO(response.content)
-    
-    response.raw.decode_content = True
+    params = {
+        "$where": f"requested_datetime between '{start_date}T00:00:00' and '{end_date}T23:59:59'",
+        "$limit": 100000,
+    }
+    response = requests.get(FILE_URL, params=params, timeout=HTTP_TIMEOUT_SECONDS)
+    if response.status_code != 200:
+        raise HTTPException(status_code=502, detail="Failed to fetch data from source")
+
     bucket = get_bucket()
     folder = f"{raw_prefix}/sf311/{date.today()}"
-    raw_file = bucket.blob(f"{folder}/sf311_raw.csv", chunk_size=50 * 1024 * 1024)
-    raw_file.upload_from_file(response.raw, content_type="text/csv")
-    reader = pd.read_csv(raw_file.open("r"), usecols=list(Column_names.keys()), dtype=str,
-                         chunksize=size)
-    kept = []
-    skipped = 0
-    for chunk in reader:
-        opened = pd.to_datetime(chunk["Opened"], errors="coerce", format="%m/%d/%Y %I:%M:%S %p").dt.date
-        in_range = chunk[(opened >= start_date) & (opened <= end_date)]
-        clean_df, chunk_skipped = clean(in_range)
-        kept.append(clean_df)
-        skipped += chunk_skipped
 
-    all_rows = pd.concat(kept)
+    raw_name = f"{folder}/sf311_raw_{start_date}_to_{end_date}.csv"
+    bucket.blob(raw_name).upload_from_string(response.content, content_type="text/csv")
+
+    df = pd.read_csv(io.BytesIO(response.content), usecols=list(Column_names.keys()), dtype=str)
+    clean_df, skipped = clean(df)
+
     file_name = f"{folder}/sf311_{start_date}_to_{end_date}.csv"
-    file = bucket.blob(file_name)
-    file.upload_from_string(all_rows.to_csv(index=False), content_type="text/csv")
-       
-    return {"rows_saved": len(all_rows), "rows_skipped": skipped,
+    bucket.blob(file_name).upload_from_string(clean_df.to_csv(index=False), content_type="text/csv")
+
+    return {"rows_saved": len(clean_df), "rows_skipped": skipped,
             "gcs_path": f"gs://{bucket.name}/{file_name}"}
