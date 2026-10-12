@@ -66,7 +66,8 @@ We will join 311 latitude and longitude to Census tracts, then use the tract GEO
   ```
 ```
   STORAGE_BACKEND=gcs
-  GCP_BUCKET_NAME=gcsbucketname
+  GCP_PROJECT_ID=your gcp project id
+  GCP_BUCKET_NAME=your gcp bucket name
   GCP_SERVICE_ACCOUNT_KEY=path/to/your-service-account-key.json
   LOCAL_OUTPUT_DIR=./data
   RAW_PREFIX=raw
@@ -90,6 +91,19 @@ Open http://127.0.0.1:8001/docs -> POST /process/sf311 -> Try it out, and paste 
 ```
 This reads the raw file from the bucket, cleans it, and saves it under processed/sf311/... in the same bucket.
 
+7. Run file ingestion (file_data_fetch.py)
+```bash
+cd ../ingestion
+pip install -r requirements.txt
+fastapi dev file_data_fetch.py --port=8002
+```
+Then follow these steps: 
+Open http://127.0.0.1:8002/docs -> Get/fetch -> Try it out, set max_rows=1000 to test.
+
+This will download SF 311 CSV file and validate rows with data_type.py.
+
+   
+
 
 **Repository Structure**
 
@@ -100,6 +114,11 @@ This reads the raw file from the bucket, cleans it, and saves it under processed
 │   ├── main.py             # To fetches data from the API
 │   ├── process_sf311.py    # Parses, cleans, and stores SF 311 data
 │   └── requirements.txt    # Python requirements for the API
+├── ingestion/
+│   ├── Dockerfile          # Container setup for the file ingestion 
+│   ├── data_types.py       # Pydantic data types for SF 311 cases 
+│   ├── file_data_fetch.py  # FastAPI service, downloads SF 311 CSV file and stores it in GCS
+│   └── requirements.txt    # Python dependencies for the ingestion service
 ├── streamlit/
 │   ├── Dockerfile          # Container setup for the Streamlit dashboard
 │   └── user_definition.py  # Configuration for the dashboard
