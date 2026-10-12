@@ -105,10 +105,10 @@ def fetch_sf311_data(start_date: date | None = None, end_date: date | None = Non
         kept.append(clean_df)
         skipped += chunk_skipped
 
-        all_rows = pd.concat(kept)
-        file_name = f"{folder}/sf311_{start_date}_to_{end_date}.csv"
-        file = bucket.blob(file_name)
-        file.upload_from_string(all_rows.to_csv(index=False), content_type="text/csv")
+    all_rows = pd.concat(kept)
+    file_name = f"{folder}/sf311_{start_date}_to_{end_date}.csv"
+    file = bucket.blob(file_name)
+    file.upload_from_string(all_rows.to_csv(index=False), content_type="text/csv")
        
-        return {"rows_saved": len(all_rows), "rows_skipped": skipped,
+    return {"rows_saved": len(all_rows), "rows_skipped": skipped,
             "gcs_path": f"gs://{bucket.name}/{file_name}"}
