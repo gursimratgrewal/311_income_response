@@ -22,7 +22,7 @@ load_dotenv()  # Load environment variables from .env file
 
 service_account_key = os.getenv("GCP_SERVICE_ACCOUNT_KEY")
 project_id = os.getenv("GCP_PROJECT_ID")
-bucket_name = os.getenv("GCS_BUCKET_NAME")   # same bucket variable main.py uses
+bucket_name = os.getenv("GCP_BUCKET_NAME")   # same bucket variable main.py uses
 
 
 # Google Cloud Storage
