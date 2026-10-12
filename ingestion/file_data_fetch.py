@@ -88,14 +88,16 @@ def fetch_sf311_data(start_date: date | None = None, end_date: date | None = Non
     if response.status_code != 200:
         raise HTTPException(status_code=500, detail="Failed to fetch data from source")
 
-    response.raw.decode_content = True
-    reader = pd.read_csv(response.raw, usecols=list(Column_names.keys()), dtype=str,
-                         chunksize=size)
+   
     #data = io.BytesIO(response.content)
     
-
+    response.raw.decode_content = True
     bucket = get_bucket()
     folder = f"{raw_prefix}/sf311/{date.today()}"
+    raw_file = bucket.blob(f"{folder}/sf311_raw.csv", chunk_size=50 * 1024 * 1024)
+    raw_file.upload_from_file(response.raw, content_type="text/csv")
+    reader = pd.read_csv(raw_file.open("r"), usecols=list(Column_names.keys()), dtype=str,
+                         chunksize=size)
     kept = []
     skipped = 0
     for chunk in reader:
