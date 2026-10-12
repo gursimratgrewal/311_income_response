@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import requests
 from dotenv import load_dotenv
-from datetime import date
+from datetime import date, timedelta
 from fastapi import FastAPI, HTTPException
 from google.cloud import storage
 from google.oauth2 import service_account
@@ -76,8 +76,12 @@ def root():
     return {"message": "Welcome to the SF311 Data Fetch API"}
 
 @app.get("/fetch", response_model=FetchData)
-def fetch_sf311_data(max_rows: int | None=None):
-    """Download the SF 311 data CSV and upload to GCS."""
+def fetch_sf311_data(start_date: date | None = None, end_date: date | None = None):
+    """Download the SF 311 data CSV and keep cases opened between start date and end date and upload to GCS."""
+    if end_date is None:
+        end_date = date.today() - timedelta(days=1)
+    if start_date is None:
+        start_date = end_date - timedelta(days=29)
     if not bucket_name:
         raise HTTPException(status_code=500, detail="Bucket name not configured")
     response = requests.get(FILE_URL, stream=True, timeout=HTTP_TIMEOUT_SECONDS)
@@ -86,19 +90,25 @@ def fetch_sf311_data(max_rows: int | None=None):
 
     response.raw.decode_content = True
     reader = pd.read_csv(response.raw, usecols=list(Column_names.keys()), dtype=str,
-                         chunksize=size, nrows=max_rows)
+                         chunksize=size)
     #data = io.BytesIO(response.content)
     
 
     bucket = get_bucket()
     folder = f"{raw_prefix}/sf311/{date.today()}"
-    saved = 0
+    kept = []
     skipped = 0
-    for i, chunk in enumerate(reader):
-        clean_df, chunk_skipped = clean(chunk)
-        file = bucket.blob(f"{folder}/sf311_part_{i:03d}.csv")
-        file.upload_from_string(clean_df.to_csv(index=False), content_type='text/csv')
-        saved += len(clean_df)
+    for chunk in reader:
+        opened = pd.to_datetime(chunk["Opened"], errors="coerce", format="mixed").dt.date
+        in_range = chunk[(opened >= start_date) & (opened <= end_date)]
+        clean_df, chunk_skipped = clean(in_range)
+        kept.append(clean_df)
         skipped += chunk_skipped
 
-    return {"rows_saved": saved, "rows_skipped": skipped, "gcs_path": f"gs://{bucket.name}/{folder}"}
+        all_rows = pd.concat(kept)
+        file_name = f"{folder}/sf311_{start_date}_to_{end_date}.csv"
+        file = bucket.blob(file_name)
+        file.upload_from_string(all_rows.to_csv(index=False), content_type="text/csv")
+       
+        return {"rows_saved": len(all_rows), "rows_skipped": skipped,
+            "gcs_path": f"gs://{bucket.name}/{file_name}"}
