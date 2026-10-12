@@ -66,8 +66,8 @@ We will join 311 latitude and longitude to Census tracts, then use the tract GEO
   ```
 ```
   STORAGE_BACKEND=gcs
-  GCS_BUCKET_NAME=gcsbucketname
-  GOOGLE_APPLICATION_CREDENTIALS=path/to/your-service-account-key.json
+  GCP_BUCKET_NAME=gcsbucketname
+  GCP_SERVICE_ACCOUNT_KEY=path/to/your-service-account-key.json
   LOCAL_OUTPUT_DIR=./data
   RAW_PREFIX=raw
   HTTP_TIMEOUT_SECONDS=120
