@@ -57,7 +57,7 @@ def clean(chunk):
     """Rename columns,validating each rows and coverting dates."""
     chunk = chunk.rename(columns=Column_names)
     for date_col in Dates:
-        chunk[date_col] = pd.to_datetime(chunk[date_col], errors='coerce', format="mixed")
+        chunk[date_col] = pd.to_datetime(chunk[date_col], errors='coerce', format="%m/%d/%Y %I:%M:%S %p")
     non_empty = chunk.notna()
     chunk = chunk.astype(object).where(non_empty, None)
 
@@ -99,7 +99,7 @@ def fetch_sf311_data(start_date: date | None = None, end_date: date | None = Non
     kept = []
     skipped = 0
     for chunk in reader:
-        opened = pd.to_datetime(chunk["Opened"], errors="coerce", format="mixed").dt.date
+        opened = pd.to_datetime(chunk["Opened"], errors="coerce", format="%m/%d/%Y %I:%M:%S %p").dt.date
         in_range = chunk[(opened >= start_date) & (opened <= end_date)]
         clean_df, chunk_skipped = clean(in_range)
         kept.append(clean_df)
