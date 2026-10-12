@@ -1,7 +1,10 @@
-import os
+""" FASTAPI that downloads the SF 311 Cases data CSV file and it stores in the GCS."""
+
+import os 
 import pandas as pd
 import requests
 from dotenv import load_dotenv
+from datetime import date
 from fastapi import FastAPI, HTTPException
 from google.cloud import storage
 from google.oauth2 import service_account
@@ -13,15 +16,12 @@ load_dotenv()
 
 service_account_key = os.getenv("GCP_SERVICE_ACCOUNT_KEY")
 project_id = os.getenv("GCP_PROJECT_ID")
-bucket_name = os.getenv("GCS_BUCKET_NAME")
+bucket_name = os.getenv("GCP_BUCKET_NAME")
 raw_prefix = os.getenv("RAW_PREFIX", "raw")
 
 FILE_URL= "https://data.sfgov.org/api/views/vw6y-z8j6/rows.csv?accessType=DOWNLOAD"
 size = 500000
 
-GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME")
-GCP_SERVICE_ACCOUNT_KEY = os.getenv("GCP_SERVICE_ACCOUNT_KEY")
-RAW_PREFIX = os.getenv("RAW_PREFIX", "raw")
 HTTP_TIMEOUT_SECONDS = int(os.getenv("HTTP_TIMEOUT_SECONDS", "120"))
 
 Column_names = {
@@ -45,6 +45,7 @@ Dates = ["created_date", "closed_date", "updated_date"]
 app = FastAPI()
 
 def get_bucket():
+    """Return GCS bucket."""
     if service_account_key:
         cred = service_account.Credentials.from_service_account_file(service_account_key)
         client = storage.Client(credentials=cred, project=project_id)
@@ -53,6 +54,7 @@ def get_bucket():
     return client.bucket(bucket_name)
 
 def clean(chunk):
+    """Rename columns,validating each rows and coverting dates."""
     chunk = chunk.rename(columns=Column_names)
     for date_col in Dates:
         chunk[date_col] = pd.to_datetime(chunk[date_col], errors='coerce', format="mixed")
@@ -70,10 +72,12 @@ def clean(chunk):
 
 @app.get("/")
 def root():
+    """Returning a welcome message."""
     return {"message": "Welcome to the SF311 Data Fetch API"}
 
 @app.get("/fetch", response_model=FetchData)
 def fetch_sf311_data(max_rows: int | None=None):
+    """Download the SF 311 data CSV and upload to GCS."""
     if not bucket_name:
         raise HTTPException(status_code=500, detail="Bucket name not configured")
     response = requests.get(FILE_URL, stream=True, timeout=HTTP_TIMEOUT_SECONDS)
@@ -87,7 +91,7 @@ def fetch_sf311_data(max_rows: int | None=None):
     
 
     bucket = get_bucket()
-    folder = f"{raw_prefix}/sf311"
+    folder = f"{raw_prefix}/sf311/{date.today()}"
     saved = 0
     skipped = 0
     for i, chunk in enumerate(reader):
