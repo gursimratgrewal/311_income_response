@@ -1,0 +1,44 @@
+# .env_template
+# Copy this file to .env in the project root and fill in your own values:
+#   cp .env_template .env
+# .env is in .gitignore, so never commit it (it has our keys in it).
+# Format is VAR_NAME=VALUE with no spaces around the "=".
+# Every service (api/, ingestion/, api_ingestion/, streamlit/) reads this same .env when run locally.
+# On Cloud Run these are set with --set-env-vars instead.
+
+
+# ---------- GCP (used by every service) ----------
+
+# Full path to your service account key (.json). Only needed when running LOCALLY.
+# GCP Console -> IAM & Admin -> Service Accounts -> choose the account -> Keys -> Add key -> JSON.
+# The service account needs the "Storage Object User" role so it can read/write the bucket.
+# Keep the key OUTSIDE this repo folder (ex. ~/.ssh/). Never commit it.
+# If you run in Docker and mount the key with -v, use the path inside the container (ex. /tmp/gcp-key.json).
+# Leave it out on Cloud Run, the service uses its own service account there.
+GCP_SERVICE_ACCOUNT_KEY=/path/to/your-service-account-key.json
+
+# Our GCP project ID (not the display name or number). You can find it on the GCP Console dashboard.
+GCP_PROJECT_ID=your-project-id
+
+# Name of our bucket in Cloud Storage. Just the name, without "gs://".
+GCP_BUCKET_NAME=data-acquisition-project-data
+
+# Top folder in the bucket where raw data gets saved (raw/sf311/, raw/acs/, raw/weather/).
+RAW_PREFIX=raw
+
+# How long to wait for a download or API call before giving up (seconds).
+HTTP_TIMEOUT_SECONDS=120
+
+
+# ---------- Census ACS 5-Year (api_ingestion/ -> /fetch/acs) ----------
+
+# Required. Get a free key at https://api.census.gov/data/key_signup.html
+# You have to click the activation link in the email before the key works.
+# SF 311 (ingestion/) and Open-Meteo (api_ingestion/ -> /fetch/weather) don't need a key.
+CENSUS_API_KEY=your-census-api-key
+
+
+# ---------- Dashboard (streamlit/user_definition.py) ----------
+
+# URL of the API service. Use http://127.0.0.1:8000 locally, or the Cloud Run URL once it's deployed.
+API_SERVICE_URL=http://127.0.0.1:8000
