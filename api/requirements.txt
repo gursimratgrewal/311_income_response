@@ -1,6 +1,0 @@
-fastapi[standard]
-requests
-pandas
-pydantic
-google-cloud-storage
-python-dotenv
