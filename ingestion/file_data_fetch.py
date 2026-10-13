@@ -11,7 +11,7 @@ from google.cloud import storage
 from google.oauth2 import service_account
 
 from pydantic import ValidationError
-from data_types import FetchData, SF311Case
+from data_types import FetchData, SF311Case, TractNeighborhood
 
 load_dotenv()
 
@@ -42,6 +42,14 @@ Column_names = {
     "source": "source",
 }
 Dates = ["created_date", "closed_date", "updated_date"]
+
+Neighborhood_file_path = "https://data.sfgov.org/api/views/sevw-6tgi/rows.csv?accessType=DOWNLOAD"
+
+Neighborhood_Column_names = { "geoid": "geoid",
+    "name": "tract_name",
+    "neighborhoods_analysis_boundaries": "neighborhood",
+    "sup_dist_2022": "supervisor_dist",
+}
          
 app = FastAPI()
 
@@ -107,6 +115,41 @@ def fetch_sf311_data(start_date: date | None = None, end_date: date | None = Non
     clean_df, skipped = clean(df)
 
     file_name = f"{folder}/sf311_{start_date}_to_{end_date}.csv"
+    bucket.blob(file_name).upload_from_string(clean_df.to_csv(index=False), content_type="text/csv")
+
+    return {"rows_saved": len(clean_df), "rows_skipped": skipped,
+            "gcs_path": f"gs://{bucket.name}/{file_name}"}
+
+@app.get("/fetch/neighborhoods", response_model=FetchData)
+def fetch_neighborhoods():
+    """Download the SF census tract to neighborhood CSV file (file-based source),
+    """
+    if not bucket_name:
+        raise HTTPException(status_code=500, detail="Bucket name is not configured")
+
+    response = requests.get(Neighborhood_file_path, timeout=HTTP_TIMEOUT_SECONDS)
+    if response.status_code != 200:
+        raise HTTPException(status_code=502, detail="Failed to fetch neighborhood file")
+
+    bucket = get_bucket()
+    folder = f"{raw_prefix}/neighborhoods/{date.today()}"
+    raw_name = f"{folder}/tract_neighborhoods_raw.csv"
+    bucket.blob(raw_name).upload_from_string(response.content, content_type="text/csv")
+
+    df = pd.read_csv(io.BytesIO(response.content), usecols=list(Neighborhood_Column_names.keys()), dtype=str)
+    df = df.rename(columns=Neighborhood_Column_names)
+    df = df.astype(object).where(df.notna(), None)
+
+    rows = []
+    skipped = 0
+    for record in df.to_dict("records"):
+        try:
+            rows.append(TractNeighborhood(**record).model_dump())
+        except ValidationError:
+            skipped += 1
+    clean_df = pd.DataFrame(rows, columns=list(TractNeighborhood.model_fields.keys()))
+
+    file_name = f"{folder}/tract_neighborhoods.csv"
     bucket.blob(file_name).upload_from_string(clean_df.to_csv(index=False), content_type="text/csv")
 
     return {"rows_saved": len(clean_df), "rows_skipped": skipped,
