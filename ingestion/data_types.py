@@ -25,3 +25,9 @@ class FetchData(BaseModel):
     rows_skipped: int
     gcs_path: str
 
+class TractNeighborhood(BaseModel):
+    geoid: str
+    tract_name: str
+    neighborhood: str
+    supervisor_dist: str| None = None
+    
