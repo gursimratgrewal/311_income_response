@@ -1,65 +1,59 @@
 """Download and clean Census ACS data."""
 
 
-import os, requests
-import pandas as pd
-from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
-from pydantic import ValidationError
+import json
 from datetime import date
-from data_types import ACSTract, FetchData
+from fastapi import HTTPException
 
-
-load_dotenv()
-
-census_api_key = os.getenv("CENSUS_API_KEY")
-HTTP_TIMEOUT_SECONDS = int(os.getenv("HTTP_TIMEOUT_SECONDS", "120"))
+from . import helper
+import config
+from data_types import ACSTract, FetchData, StoreData
+from storage import upload_to_gcs
 
 ACS_URL = "https://api.census.gov/data/{year}/acs/acs5"
 ACS_YEAR = 2024
+
 STATE_FIPS = "06"
+
 COUNTY_FIPS = "075"
 
-app = FastAPI()
 
-def clean(records, data_type):
-    """Checks each row against the data type and counts the ones that fail."""
-    rows = []
-    skipped = 0
-    for record in records:
-        try:
-            rows.append(data_type(**record).model_dump())
-        except ValidationError:
-            skipped += 1
-    return pd.DataFrame(rows, columns=list(data_type.model_fields.keys())), skipped
+def file_names(fetch_date, year):
+    folder = f"{config.raw_prefix}/acs/{fetch_date}"
+    return [f"{folder}/acs_raw_{year}.json", f"{folder}/acs_{year}.csv"]
 
 
-@app.get("/")
-def root():
-    """Returns a welcome message from the api sources."""
-    return {"message": "Welcome to the Census Data Fetch API"}
-
-
-@app.get("/fetch/acs", response_model=FetchData)
 def fetch_acs_data(year: int = ACS_YEAR):
-    """Gets the median household income and population for every SF census tract. Missing estimates are saved as blank."""
-
+    bucket = helper.configured_bucket()
     params = {
         "get": "NAME,B19013_001E,B01003_001E",
         "for": "tract:*",
         "in": f"state:{STATE_FIPS} county:{COUNTY_FIPS}",
-        "key": census_api_key,
+        "key": config.census_api_key,
     }
-    response = requests.get(ACS_URL.format(year=year), params=params, timeout=HTTP_TIMEOUT_SECONDS)
-    if response.status_code != 200:
-        raise HTTPException(status_code=502, detail="Failed to fetch data from source")
-
+    response = helper.fetch_response(ACS_URL.format(year=year), params=params)
     try:
-        table = response.json()
+        response.json()
     except ValueError:
         raise HTTPException(status_code=502, detail="Census did not send JSON back, check CENSUS_API_KEY")
+    
+    fetched_date = date.today()
+    raw_name =file_names(fetched_date, year)[0]
+    gcs_path = upload_to_gcs(raw_name, response.content, "application/json", bucket)
+    return FetchData(source="acs", fetched_date=fetched_date, raw_data_type="application/json", gcs_path=gcs_path, year=year)
 
 
+def parse_acs_data(year: int = ACS_YEAR, fetch_date: date | None = None):
+    """Gets the median household income and population for every SF census tract. Missing estimates are saved as blank."""
+    if fetch_date is None:
+        fetch_date = date.today()
+    bucket = helper.configured_bucket()
+    raw_name, file_name = file_names(fetch_date, year)
+    raw_data = helper.read_raw(raw_name, bucket)
+    try:
+        table = json.loads(raw_data)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Not valid JSON")
     columns = table[0]
     records = []
     for row in table[1:]:
@@ -73,17 +67,8 @@ def fetch_acs_data(year: int = ACS_YEAR):
             "total_population": population if population >= 0 else None,
             "acs_year": year,
         })
-    clean_df, skipped = clean(records, ACSTract)
+    clean_df, skipped = helper.clean(records, ACSTract)
     clean_df["median_household_income"] = clean_df["median_household_income"].astype("Int64")
     clean_df["total_population"] = clean_df["total_population"].astype("Int64")
-
-
-    return FetchData(
-        source="acs",
-        fetched_date=date.today(),
-        raw_data=response.content,
-        raw_data_type="application/json",
-        data=clean_df.to_csv(index=False),
-        rows_count=len(clean_df),
-        rows_skipped=skipped,
-        year=year)
+    gcs_path = upload_to_gcs(file_name, clean_df.to_csv(index=False), "text/csv", bucket)
+    return StoreData(rows_saved=len(clean_df), rows_skipped=skipped, gcs_path=gcs_path)

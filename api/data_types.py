@@ -1,6 +1,6 @@
 """Shared data types for SF 311, Census ACS, neighborhoods, and weather."""
 
-from datetime import datetime, date
+from datetime import date, datetime
 from pydantic import BaseModel
 
 
@@ -43,22 +43,6 @@ class SF311Case(BaseModel):
     source: str | None = None
 
 
-class FetchData(BaseModel):
-    source: str
-    fetched_date: date
-
-    raw_data: str
-    raw_data_type: str
-    data: str
-
-    rows_count: int
-    rows_skipped: int
-
-    year: int | None = None
-    start_date: date | None = None
-    end_date: date | None = None
-
-
 class StoreData(BaseModel):
     """What each store route returns."""
     rows_saved: int
@@ -67,8 +51,18 @@ class StoreData(BaseModel):
 
 
 class TractNeighborhood(BaseModel):
-    """One census tract mapped to an SF analysis neighborhood."""
+    """census tract mapped to neighborhood."""
     geoid: str
     tract_name: str
     neighborhood: str
     supervisor_dist: str | None = None
+
+
+class FetchData(BaseModel):
+    source: str
+    fetched_date: date
+    raw_data_type: str
+    gcs_path: str
+    year: int | None = None
+    start_date: date | None = None
+    end_date: date | None = None

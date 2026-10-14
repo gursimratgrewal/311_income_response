@@ -1,21 +1,16 @@
-"""Download and clean SF 311 cases and tract-neighborhood files."""
+"""Download and clean SF 311 cases files."""
 
-
-import os, io, requests
+import io
 import pandas as pd
-from dotenv import load_dotenv
-from datetime import date, timedelta
-from fastapi import HTTPException
+from datetime import date
 from pydantic import ValidationError
-from data_types import SF311Case, TractNeighborhood, FetchData
 
-
-load_dotenv()
-
-HTTP_TIMEOUT_SECONDS = int(os.getenv("HTTP_TIMEOUT_SECONDS", "120"))
+from . import helper
+import config
+from data_types import FetchData, SF311Case, StoreData
+from storage import upload_to_gcs
 
 FILE_URL = "https://data.sfgov.org/resource/vw6y-z8j6.csv"
-
 
 Column_names = {
     "service_request_id": "service_request_id",
@@ -33,16 +28,9 @@ Column_names = {
     "long": "lng",
     "source": "source",
 }
+
 Dates = ["created_date", "closed_date", "updated_date"]
 
-Neighborhood_file_path = "https://data.sfgov.org/api/views/sevw-6tgi/rows.csv?accessType=DOWNLOAD"
-
-Neighborhood_Column_names = { "geoid": "geoid",
-    "name": "tract_name",
-    "neighborhoods_analysis_boundaries": "neighborhood",
-    "sup_dist_2022": "supervisor_dist",
-}
-         
 
 def clean(chunk):
     """Rename columns,validating each rows and coverting dates."""
@@ -62,68 +50,35 @@ def clean(chunk):
     return pd.DataFrame(rows,columns=list(SF311Case.model_fields.keys())), skipped
 
 
-def fetch_sf311_data(start_date: date | None = None, end_date: date | None = None):
-    """Download SF 311 cases opened between start_date and end_date as a CSV file,
-    """
-    if end_date is None:
-        end_date = date.today() - timedelta(days=1)  
-    if start_date is None:
-        start_date = end_date - timedelta(days=1)   
-    if start_date > end_date:
-        raise HTTPException(status_code=400, detail="start_date must be before end_date")
+def file_names(fetch_date, start_date, end_date):
+    folder = f"{config.raw_prefix}/sf311/{fetch_date}"
+    period = f"{start_date}_to_{end_date}"
+    return [f"{folder}/sf311_raw_{period}.csv", f"{folder}/sf311_{period}.csv"]
 
+
+def fetch_sf311_data(start_date: date | None = None, end_date: date | None = None):
+    bucket = helper.configured_bucket()
+    fetched_date = date.today()
+    start_date, end_date = helper.resolve_dates(start_date, end_date, fetched_date)
     params = {
         "$where": f"requested_datetime between '{start_date}T00:00:00' and '{end_date}T23:59:59'",
         "$limit": 100000,
     }
-    response = requests.get(FILE_URL, params=params, timeout=HTTP_TIMEOUT_SECONDS)
-    if response.status_code != 200:
-        raise HTTPException(status_code=502, detail="Failed to fetch data from source")
+    response = helper.fetch_response(FILE_URL, params=params)
+    raw_name = file_names(fetched_date, start_date, end_date)[0]
+    gcs_path = upload_to_gcs(raw_name, response.content, "text/csv", bucket)
+    return FetchData(source="sf311", fetched_date=fetched_date, raw_data_type="text/csv", gcs_path=gcs_path, start_date=start_date, end_date=end_date)
 
 
-    df = pd.read_csv(io.BytesIO(response.content), usecols=list(Column_names.keys()), dtype=str)
+def parse_sf311_data(start_date: date | None = None, end_date: date | None = None, fetch_date: date | None = None):
+    """Download SF 311 cases opened between start_date and end_date as a CSV file"""
+    bucket = helper.configured_bucket()
+    if fetch_date is None:
+        fetch_date = date.today()
+    start_date, end_date = helper.resolve_dates(start_date, end_date, fetch_date)
+    raw_name, file_name = file_names(fetch_date, start_date, end_date)
+    raw_data = helper.read_raw(raw_name, bucket)
+    df = pd.read_csv(io.BytesIO(raw_data), usecols=list(Column_names.keys()), dtype=str)
     clean_df, skipped = clean(df)
-
-
-    return FetchData(
-        source="sf311",
-        fetched_date=date.today(),
-        raw_data=response.content,
-        raw_data_type="text/csv",
-        data=clean_df.to_csv(index=False),
-        rows_count=len(clean_df),
-        rows_skipped=skipped,
-        start_date=start_date,
-        end_date=end_date)
-
-def fetch_neighborhoods():
-    """Download the SF census tract to neighborhood CSV file (file-based source),
-    """
-
-    response = requests.get(Neighborhood_file_path, timeout=HTTP_TIMEOUT_SECONDS)
-    if response.status_code != 200:
-        raise HTTPException(status_code=502, detail="Failed to fetch neighborhood file")
-
-
-    df = pd.read_csv(io.BytesIO(response.content), usecols=list(Neighborhood_Column_names.keys()), dtype=str)
-    df = df.rename(columns=Neighborhood_Column_names)
-    df = df.astype(object).where(df.notna(), None)
-
-    rows = []
-    skipped = 0
-    for record in df.to_dict("records"):
-        try:
-            rows.append(TractNeighborhood(**record).model_dump())
-        except ValidationError:
-            skipped += 1
-    clean_df = pd.DataFrame(rows, columns=list(TractNeighborhood.model_fields.keys()))
-
-
-    return FetchData(
-        source="neighborhoods",
-        fetched_date=date.today(),
-        raw_data=response.content,
-        raw_data_type="text/csv",
-        data=clean_df.to_csv(index=False),
-        rows_count=len(clean_df),
-        rows_skipped=skipped)
+    gcs_path = upload_to_gcs(file_name, clean_df.to_csv(index=False), "text/csv", bucket)
+    return StoreData(rows_saved=len(clean_df), rows_skipped=skipped, gcs_path=gcs_path)
