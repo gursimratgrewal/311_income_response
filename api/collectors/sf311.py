@@ -1,29 +1,21 @@
-""" FASTAPI that downloads the SF 311 Cases data CSV file and it stores in the GCS."""
+"""Download and clean SF 311 cases and tract-neighborhood files."""
 
-import os
-import io
+
+import os, io, requests
 import pandas as pd
-import requests
 from dotenv import load_dotenv
 from datetime import date, timedelta
-from fastapi import FastAPI, HTTPException
-from google.cloud import storage
-from google.oauth2 import service_account
-
+from fastapi import HTTPException
 from pydantic import ValidationError
-from data_types import FetchData, SF311Case, TractNeighborhood
+from data_types import SF311Case, TractNeighborhood, FetchData
+
 
 load_dotenv()
 
-service_account_key = os.getenv("GCP_SERVICE_ACCOUNT_KEY")
-project_id = os.getenv("GCP_PROJECT_ID")
-bucket_name = os.getenv("GCP_BUCKET_NAME")
-raw_prefix = os.getenv("RAW_PREFIX", "raw")
+HTTP_TIMEOUT_SECONDS = int(os.getenv("HTTP_TIMEOUT_SECONDS", "120"))
 
 FILE_URL = "https://data.sfgov.org/resource/vw6y-z8j6.csv"
 
-
-HTTP_TIMEOUT_SECONDS = int(os.getenv("HTTP_TIMEOUT_SECONDS", "120"))
 
 Column_names = {
     "service_request_id": "service_request_id",
@@ -51,16 +43,6 @@ Neighborhood_Column_names = { "geoid": "geoid",
     "sup_dist_2022": "supervisor_dist",
 }
          
-app = FastAPI()
-
-def get_bucket():
-    """Return GCS bucket."""
-    if service_account_key:
-        cred = service_account.Credentials.from_service_account_file(service_account_key)
-        client = storage.Client(credentials=cred, project=project_id)
-    else:
-        client = storage.Client(project=project_id)
-    return client.bucket(bucket_name)
 
 def clean(chunk):
     """Rename columns,validating each rows and coverting dates."""
@@ -79,12 +61,7 @@ def clean(chunk):
             skipped += 1
     return pd.DataFrame(rows,columns=list(SF311Case.model_fields.keys())), skipped
 
-@app.get("/")
-def root():
-    """Returning a welcome message."""
-    return {"message": "Welcome to the SF311 Data Fetch API"}
 
-@app.get("/fetch", response_model=FetchData)
 def fetch_sf311_data(start_date: date | None = None, end_date: date | None = None):
     """Download SF 311 cases opened between start_date and end_date as a CSV file,
     """
@@ -94,8 +71,6 @@ def fetch_sf311_data(start_date: date | None = None, end_date: date | None = Non
         start_date = end_date - timedelta(days=1)   
     if start_date > end_date:
         raise HTTPException(status_code=400, detail="start_date must be before end_date")
-    if not bucket_name:
-        raise HTTPException(status_code=500, detail="Bucket name is not configured")
 
     params = {
         "$where": f"requested_datetime between '{start_date}T00:00:00' and '{end_date}T23:59:59'",
@@ -105,36 +80,30 @@ def fetch_sf311_data(start_date: date | None = None, end_date: date | None = Non
     if response.status_code != 200:
         raise HTTPException(status_code=502, detail="Failed to fetch data from source")
 
-    bucket = get_bucket()
-    folder = f"{raw_prefix}/sf311/{date.today()}"
-
-    raw_name = f"{folder}/sf311_raw_{start_date}_to_{end_date}.csv"
-    bucket.blob(raw_name).upload_from_string(response.content, content_type="text/csv")
 
     df = pd.read_csv(io.BytesIO(response.content), usecols=list(Column_names.keys()), dtype=str)
     clean_df, skipped = clean(df)
 
-    file_name = f"{folder}/sf311_{start_date}_to_{end_date}.csv"
-    bucket.blob(file_name).upload_from_string(clean_df.to_csv(index=False), content_type="text/csv")
 
-    return {"rows_saved": len(clean_df), "rows_skipped": skipped,
-            "gcs_path": f"gs://{bucket.name}/{file_name}"}
+    return FetchData(
+        source="sf311",
+        fetched_date=date.today(),
+        raw_data=response.content,
+        raw_data_type="text/csv",
+        data=clean_df.to_csv(index=False),
+        rows_count=len(clean_df),
+        rows_skipped=skipped,
+        start_date=start_date,
+        end_date=end_date)
 
-@app.get("/fetch/neighborhoods", response_model=FetchData)
 def fetch_neighborhoods():
     """Download the SF census tract to neighborhood CSV file (file-based source),
     """
-    if not bucket_name:
-        raise HTTPException(status_code=500, detail="Bucket name is not configured")
 
     response = requests.get(Neighborhood_file_path, timeout=HTTP_TIMEOUT_SECONDS)
     if response.status_code != 200:
         raise HTTPException(status_code=502, detail="Failed to fetch neighborhood file")
 
-    bucket = get_bucket()
-    folder = f"{raw_prefix}/neighborhoods/{date.today()}"
-    raw_name = f"{folder}/tract_neighborhoods_raw.csv"
-    bucket.blob(raw_name).upload_from_string(response.content, content_type="text/csv")
 
     df = pd.read_csv(io.BytesIO(response.content), usecols=list(Neighborhood_Column_names.keys()), dtype=str)
     df = df.rename(columns=Neighborhood_Column_names)
@@ -149,8 +118,12 @@ def fetch_neighborhoods():
             skipped += 1
     clean_df = pd.DataFrame(rows, columns=list(TractNeighborhood.model_fields.keys()))
 
-    file_name = f"{folder}/tract_neighborhoods.csv"
-    bucket.blob(file_name).upload_from_string(clean_df.to_csv(index=False), content_type="text/csv")
 
-    return {"rows_saved": len(clean_df), "rows_skipped": skipped,
-            "gcs_path": f"gs://{bucket.name}/{file_name}"}
+    return FetchData(
+        source="neighborhoods",
+        fetched_date=date.today(),
+        raw_data=response.content,
+        raw_data_type="text/csv",
+        data=clean_df.to_csv(index=False),
+        rows_count=len(clean_df),
+        rows_skipped=skipped)

@@ -1,40 +1,13 @@
 """Part C - clean and join the 311, Census, weather and neighborhood files, and store the result in GCS."""
 
-import io
 import json
-import os
 from datetime import date, timedelta
 
 import pandas as pd
-from dotenv import load_dotenv
 from fastapi import FastAPI
-from google.cloud import storage
-from google.oauth2 import service_account
-
-load_dotenv()
-
-service_account_key = os.getenv("GCP_SERVICE_ACCOUNT_KEY")
-project_id = os.getenv("GCP_PROJECT_ID")
-bucket_name = os.getenv("GCP_BUCKET_NAME")
+from storage import retrieve_data_from_gcs, store_to_gcs
 
 app = FastAPI()
-
-
-def get_client():
-    """Connect to Google Cloud Storage with the service account key."""
-    credentials = service_account.Credentials.from_service_account_file(service_account_key)
-    return storage.Client(project=project_id, credentials=credentials)
-
-
-def retrieve_data_from_gcs(file_name):
-    """Download a file from the bucket and return it as a DataFrame."""
-    data = get_client().bucket(bucket_name).blob(file_name).download_as_bytes()
-    return pd.read_csv(io.BytesIO(data), dtype={"geoid": str})
-
-
-def store_to_gcs(file_name, df):
-    """Upload a DataFrame to the bucket as a CSV file."""
-    get_client().bucket(bucket_name).blob(file_name).upload_from_string(df.to_csv(index=False))
 
 
 @app.post("/process")
