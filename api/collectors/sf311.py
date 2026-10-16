@@ -51,7 +51,7 @@ def clean(chunk):
 
 
 def file_names(fetch_date, start_date, end_date):
-    " Defining start and end date"
+    "Building file names"
     folder = f"{config.raw_prefix}/sf311/{fetch_date}"
     period = f"{start_date}_to_{end_date}"
     return [f"{folder}/sf311_raw_{period}.csv", f"{folder}/sf311_{period}.csv"]
