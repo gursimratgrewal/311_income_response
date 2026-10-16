@@ -1,4 +1,0 @@
-fastapi[standard]
-pandas
-google-cloud-storage
-python-dotenv
