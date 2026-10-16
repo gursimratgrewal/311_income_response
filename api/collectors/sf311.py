@@ -51,14 +51,14 @@ def clean(chunk):
 
 
 def file_names(fetch_date, start_date, end_date):
-    "Building file names"
+    """Building file names"""
     folder = f"{config.raw_prefix}/sf311/{fetch_date}"
     period = f"{start_date}_to_{end_date}"
     return [f"{folder}/sf311_raw_{period}.csv", f"{folder}/sf311_{period}.csv"]
 
 
 def fetch_sf311_data(start_date: date | None = None, end_date: date | None = None):
-    "Download the raw 311 cases and save them to GCS"
+    """Download the raw 311 cases and save them to GCS"""
     bucket = helper.configured_bucket()
     fetched_date = date.today()
     start_date, end_date = helper.resolve_dates(start_date, end_date, fetched_date)
