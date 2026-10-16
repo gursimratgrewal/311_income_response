@@ -20,11 +20,13 @@ Neighborhood_Column_names = { "geoid": "geoid",
 
 
 def file_names(fetch_date):
+    " Fetching date "
     folder = f"{config.raw_prefix}/neighborhoods/{fetch_date}"
     return f"{folder}/tract_neighborhoods_raw.csv", f"{folder}/tract_neighborhoods.csv"
 
 
 def fetch_neighborhoods():
+    " Fetching neighborhood data"
     bucket = helper.configured_bucket()
     response = helper.fetch_response(Neighborhood_file_path)
     fetched_date = date.today()
@@ -34,7 +36,7 @@ def fetch_neighborhoods():
 
 
 def parse_neighborhoods(fetch_date: date | None = None):
-    """Download the SF census tract to neighborhood CSV file (file-based source)"""
+    """Clean the SF census tract to neighborhood CSV file (file-based source)"""
     bucket = helper.configured_bucket()
     if fetch_date is None:
         fetch_date = date.today()
