@@ -1,19 +1,11 @@
-"""
+'''
 Functions used by the 311 Income Response dashboard (dashboard.py).
 
 Data is pulled from the processing API (processing/process_sf311.py),
 which cleaned and joined the 311, ACS, weather and neighborhood files
 
-GET /summary: One row per neighborhood: neighborhood,
-                median_household_income, total_population, cases,
-                median_hours
-GET /data: One row per closed 311 case, with the case columns plus
-                hours_to_close, date, median_household_income,
-                total_population, precipitation, temperature_2m
-
-Neighborhood outlines for the maps come from DataSF (Analysis
-Neighborhoods), the same 41 names used by the 311 "neighborhood" column.
-"""
+Neighborhood outlines for the maps come from DataSF 
+'''
 import pandas as pd
 import pydeck as pdk # Claude Opus 5.5 recommended pydeck to produce maps 
 import requests
@@ -33,10 +25,11 @@ def retrieve_data_from_api(api_server_url: str, endpoint: str) -> pd.DataFrame:
     """
     response = requests.get(f"{api_server_url.rstrip('/')}{endpoint}",
                             timeout=60)
-    response.raise_for_status()
+    response.raise_for_status() # Claude Opus 5.5 suggested this function to raise exception
     return pd.DataFrame(response.json())
 
-# Preparing the data; Segent income and median service time into quartiles
+# Segment income and median service time into quartiles
+# Asked Claude Opus 5.5 how to create quartile labels
 def quartile_labels(n_groups: int) -> list:
     """["Q1 (low)", "Q2", "Q3", "Q4 (high)"] for n_groups=4."""
     labels = [f"Q{i}" for i in range(1, n_groups + 1)]
@@ -70,13 +63,13 @@ def prepare_summary(summary: pd.DataFrame) -> pd.DataFrame:
     df = summary.copy()
     for column in ["median_household_income", "total_population",
                    "cases", "median_hours"]:
-        df[column] = pd.to_numeric(df[column], errors="coerce")
+        df[column] = pd.to_numeric(df[column], errors="coerce") # Claude Opus 5.5 provided the "errors="coerce" during troubleshooting
     df = df.dropna(subset=["median_household_income"])
     df["median_household_income"] = df["median_household_income"].round(0)
     df = add_quartile(df, "median_household_income", "income_quartile")
     return df.sort_values("median_household_income").reset_index(drop=True)
 
-# Use Claude Opus 5.5 to toubleshoot duplicate data when creating charts for streamlit
+# Use Claude Opus 5.5 to troubleshoot duplicate data when creating charts for streamlit
 def prepare_cases(data: pd.DataFrame, summary: pd.DataFrame) -> pd.DataFrame:
     """
     Clean the /data rows
@@ -115,7 +108,7 @@ def summarize_resolution(df: pd.DataFrame,
         medians = medians.head(top_n)
     return medians.to_dict()
 
-
+# Asked Claude Opus 5.5 how to sort by quartile to return a df for streamlit
 def resolution_by_quartile_and_weather(df: pd.DataFrame) -> pd.DataFrame:
     """
     Median service time with income quartiles vs income levels ad weather
@@ -127,7 +120,7 @@ def resolution_by_quartile_and_weather(df: pd.DataFrame) -> pd.DataFrame:
                              values="hours_to_close", aggfunc="median",
                              observed=True).round(1)
 
-
+# Asked Claude Opus 5.5 how to display neighborhood table in streamlit
 def neighborhood_table(df: pd.DataFrame,
                        summary: pd.DataFrame) -> pd.DataFrame:
     """

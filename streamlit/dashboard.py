@@ -1,3 +1,11 @@
+'''
+File containing all of the visuals for the deployed streamlit app
+    Visuals include:
+        1. Two bar charts diplaying median service hours by income quartiel (with and without weather)
+        2. Neigborhood maps of SF displaying income by quartile and median service time by quartile
+        3. A barchart displaying median service time by issue type
+        4. Tables summarizing the processed rows stored in the bucket
+'''
 import streamlit as st
 import pandas as pd
 
