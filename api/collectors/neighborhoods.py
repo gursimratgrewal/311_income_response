@@ -20,13 +20,13 @@ Neighborhood_Column_names = { "geoid": "geoid",
 
 
 def file_names(fetch_date):
-    " Fetching date "
+    """ Cleaning neighborhood file names """
     folder = f"{config.raw_prefix}/neighborhoods/{fetch_date}"
     return f"{folder}/tract_neighborhoods_raw.csv", f"{folder}/tract_neighborhoods.csv"
 
 
 def fetch_neighborhoods():
-    " Fetching neighborhood data"
+    """ Fetching neighborhood data and save to GCS """
     bucket = helper.configured_bucket()
     response = helper.fetch_response(Neighborhood_file_path)
     fetched_date = date.today()
