@@ -51,12 +51,14 @@ def clean(chunk):
 
 
 def file_names(fetch_date, start_date, end_date):
+    " Defining start and end date"
     folder = f"{config.raw_prefix}/sf311/{fetch_date}"
     period = f"{start_date}_to_{end_date}"
     return [f"{folder}/sf311_raw_{period}.csv", f"{folder}/sf311_{period}.csv"]
 
 
 def fetch_sf311_data(start_date: date | None = None, end_date: date | None = None):
+    "Download the raw 311 cases and save them to GCS"
     bucket = helper.configured_bucket()
     fetched_date = date.today()
     start_date, end_date = helper.resolve_dates(start_date, end_date, fetched_date)
@@ -71,7 +73,7 @@ def fetch_sf311_data(start_date: date | None = None, end_date: date | None = Non
 
 
 def parse_sf311_data(start_date: date | None = None, end_date: date | None = None, fetch_date: date | None = None):
-    """Download SF 311 cases opened between start_date and end_date as a CSV file"""
+    """Cleans SF 311 cases opened between start_date and end_date as a CSV file"""
     bucket = helper.configured_bucket()
     if fetch_date is None:
         fetch_date = date.today()
