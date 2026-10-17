@@ -9,7 +9,7 @@ REGION="us-west1"
 ENV_FILE="/Users/erics359/USF_Classes/group_assignment/311_income_response/.env"
 
 # Absolute path to service account JSON
-LOCAL_KEY_FILE="/Users/erics359/.ssh/data-acqusition-group-project-53080a97e298.json"
+LOCAL_KEY_FILE="/path/to/your/.env"
 
 WEBAPP_PORT="8501"
 
@@ -28,7 +28,7 @@ API_SERVICE=processing-api
 # when trying to cloud run streamlit
 for _var in PROJECT_ID REGION ENV_FILE LOCAL_KEY_FILE WEBAPP_PORT; do
   if [ -z "${!_var}" ]; then
-    echo "ERROR: $_var is empty - fill in TODOs in webapp_config.sh" >&2
+    echo "ERROR: $_var is empty - fill in streamlit_config.sh" >&2
     exit 1
   fi
 done

@@ -1,10 +1,10 @@
 #Create python 3.13 base image
 FROM python:3.13-slim
 
-# Set the a working directory
+# Set the working directory
 WORKDIR /streamlit
 
-# Copy environment.yml
+# Copy files in the directory
 COPY * ./
 
 # Install libraries and packages
