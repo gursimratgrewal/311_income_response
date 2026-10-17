@@ -5,13 +5,13 @@
 # 3. Deploy the Streamlit service with the key mounted
 #
 # To run from this directory:
-#   bash webapp_deploy.sh
+#   bash streamlit_cloud_command.sh
 # Tear down:
-#   bash webapp_deploy.sh teardown
+#   bash streamlit_cloud_command.sh teardown
 set -euo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-source "$SCRIPT_DIR/webapp_config.sh"
+source "$SCRIPT_DIR/streamlit_config.sh"
 
 gcloud config set project "$PROJECT_ID"
 gcloud config set run/region "$REGION"

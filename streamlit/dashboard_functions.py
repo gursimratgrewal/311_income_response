@@ -1,7 +1,7 @@
 '''
 Functions used by the 311 Income Response dashboard (dashboard.py).
 
-Data is pulled from the processing API (processing/process_sf311.py),
+Data is pulled from the transform API (api/transform.py),
 which cleaned and joined the 311, ACS, weather and neighborhood files
 
 Neighborhood outlines for the maps come from DataSF 
