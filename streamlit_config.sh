@@ -6,14 +6,14 @@ PROJECT_ID="data-acqusition-group-project"
 REGION="us-west1"
 
 # Absolute path to the project .env 
-ENV_FILE="/Users/erics359/USF_Classes/group_assignment/311_income_response/.env"
+ENV_FILE="/path/to/your/.env"
 
 # Absolute path to service account JSON
-LOCAL_KEY_FILE="/path/to/your/.env"
+LOCAL_KEY_FILE="/path/to/your/service_key.json"
 
 WEBAPP_PORT="8501"
 
-GCP_KEY_SECRET=sf311-gcp-key
+GCP_KEY_SECRET=group-hw3-gcp-key
 SECRET_MOUNT_PATH=/run/secrets/gcp_key
 
 # Taken from Claude after asking Opus 5.5 how to deconflict a
