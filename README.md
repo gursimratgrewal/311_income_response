@@ -107,7 +107,7 @@ Open http://127.0.0.1:8000/docs to see all routes.
  ```bash
 cd streamlit
 pip install -r requirements.txt
-streamlit run dashboard.py
+streamlit run streamlit_app.py
 ```
 Open http://localhost:8501
 
@@ -126,7 +126,7 @@ Open http://localhost:8501
 │   │   ├── neighborhoods.py     # Downloads the SF census tract to neighborhood CSV file (File based acquisition)
 │   │   ├── sf311.py             # Fetches SF 311 cases for a date range (API fetch)
 │   │   └── weather.py           # Fetches hourly SF weather from Open-Meteo (API fetch)
-│   ├── config.py                # Loads environment variables 
+│   ├── user_definition.py       # Loads custom variables 
 │   ├── data_types.py            # Data types for every source
 │   ├── Dockerfile               # Container setup for the API service 
 │   ├── main.py                  # FastAPI app with all the routes
@@ -134,15 +134,14 @@ Open http://localhost:8501
 │   ├── storage.py               # GCS connection, upload and download
 │   └── transform.py             # Cleans and joins 311, Census, weather, and neighborhood files, stores result in GCS
 ├── streamlit/
-│   ├── dashboard.py             # Streamlit dashboard app
-│   ├── dashboard_functions.py   # Helper functions for the dashboard
+│   ├── streamlit_app.py         # Streamlit dashboard app
+│   ├── helper.py                # Helper functions for the dashboard
 │   ├── Dockerfile               # Container setup for the dashboard 
 │   ├── requirements.txt         # Python dependencies for the dashboard
 │   └── user_definition.py       # Dashboard settings
-├── streamlit_cloud_commands.sh  # Deploys the dashboard.
-├── streamlit_config.sh          # Settings for the deploy script
+├── gcloud_commands.sh           # Deploys the service.
+├── config.sh                    # Settings for the deploy script
 ├── .env_template                # Template for environment variables (copy to .env)
-├── .gitignore                   # Files Git should ignore
 └── README.md                    # Project documentation
 ```
 

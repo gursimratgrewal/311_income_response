@@ -10,7 +10,7 @@ import pandas as pd
 import streamlit as st
 
 from user_definition import API_SERVER_URL, TOP_CATEGORIES, MAP_HEIGHT
-from dashboard_functions import (neighborhood_table, ordered_chart_data,
+from helper import (neighborhood_table, ordered_chart_data,
                                  prepare_cases, prepare_summary,
                                  quartile_geojson, quartile_map,
                                  resolution_by_quartile_and_weather,

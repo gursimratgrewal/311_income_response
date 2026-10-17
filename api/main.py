@@ -24,6 +24,7 @@ def fetch_acs_data(year: int = acs.ACS_YEAR):
 
 @app.get("/parse/acs", response_model=StoreData)
 def parse_acs_data(year: int = acs.ACS_YEAR, fetch_date: date | None = None):
+    """Cleans the raw ACS data and saves DF to GCS."""
     return acs.parse_acs_data(year, fetch_date)
 
 
@@ -35,6 +36,7 @@ def fetch_weather_data(start_date: date | None = None, end_date: date | None = N
 
 @app.get("/parse/weather", response_model=StoreData)
 def parse_weather_data(start_date: date | None = None, end_date: date | None = None, fetch_date: date | None = None):
+    """Cleans the raw weather data and saves DF to GCS."""
     return weather.parse_weather_data(start_date, end_date, fetch_date)
 
 
@@ -46,6 +48,7 @@ def fetch_sf311_data(start_date: date | None = None, end_date: date | None = Non
 
 @app.get("/parse/sf311", response_model=StoreData)
 def parse_sf311_data(start_date: date | None = None, end_date: date | None = None, fetch_date: date | None = None):
+    """Cleans the raw SF 311 data and saves DF to GCS."""
     return sf311.parse_sf311_data(start_date, end_date, fetch_date)
 
 
@@ -57,11 +60,14 @@ def fetch_neighborhoods():
 
 @app.get("/parse/neighborhoods", response_model=StoreData)
 def parse_neighborhoods(fetch_date: date | None = None):
+    """Cleans the raw neighborhood data and saves DF to GCS."""
     return neighborhoods.parse_neighborhoods(fetch_date)
 
 
 @app.post("/process")
 def process(fetch_date: date | None = None, year: int = acs.ACS_YEAR, start_date: date | None = None, end_date: date | None = None):
+    """Clean and join the raw files fetched on fetch_date (default today), then save joined.csv and summary.csv.
+    The 311 and weather files cover the 2 days before fetch_date, same as the fetch services."""
     return transform.process(fetch_date, year, start_date, end_date)
 
 

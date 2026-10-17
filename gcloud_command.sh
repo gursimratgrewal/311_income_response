@@ -7,7 +7,7 @@ source "$SCRIPT_DIR/config.sh"
 gcloud config set project "$PROJECT_ID"
 gcloud config set run/region "$REGION"
 
-gcloud services enable secretmanager.googleapis.com cloudscheduler.googleapis.com
+gcloud services enable secretmanager.googleapis.com cloudscheduler.googleapis.com run.googleapis.com cloudbuild.googleapis.com
 
 if ! gcloud secrets describe "$GCP_KEY_SECRET" >/dev/null 2>&1; then
   gcloud secrets create "$GCP_KEY_SECRET" --replication-policy=automatic
@@ -100,6 +100,7 @@ for SOURCE in $SOURCES; do
     gcloud scheduler jobs "$SCHEDULER_ACTION" http "$SCHEDULER_JOB" \
       --location="$REGION" \
       --schedule="$SCHEDULE" \
+      --time-zone="$TIME_ZONE" \
       --uri="$SERVICE_URL$REQUEST_PATH" \
       --http-method=GET \
       --attempt-deadline=1800s
@@ -118,6 +119,7 @@ fi
 gcloud scheduler jobs "$SCHEDULER_ACTION" http "$PROCESS_SCHEDULER_JOB" \
   --location="$REGION" \
   --schedule="$PROCESS_SCHEDULE" \
+  --time-zone="$TIME_ZONE" \
   --uri="$API_SERVER_URL$PROCESS_PATH" \
   --http-method=POST \
   --attempt-deadline=1800s

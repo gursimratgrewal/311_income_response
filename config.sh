@@ -18,6 +18,7 @@ WEBAPP_SERVICE=sf311-webapp
 
 SOURCES="acs weather sf311 neighborhoods"
 
+TIME_ZONE="America/Los_Angeles"
 FETCH_SCHEDULER_JOB=sf311-fetch-trigger
 PARSE_SCHEDULER_JOB=sf311-parse-trigger
 PROCESS_SCHEDULER_JOB=sf311-process-trigger
