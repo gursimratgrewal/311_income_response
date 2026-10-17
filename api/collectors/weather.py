@@ -16,12 +16,14 @@ WEATHER_VARS = ["temperature_2m", "precipitation", "rain", "weather_code", "wind
 
 
 def file_names(fetch_date, start_date, end_date):
+    """Return the raw and cleaned file paths in the bucket for one date range."""
     folder = f"{config.raw_prefix}/weather/{fetch_date}"
     period = f"{start_date}_to_{end_date}"
     return [f"{folder}/weather_raw_{period}.json", f"{folder}/weather_{period}.csv"]
 
 
 def fetch_weather_data(start_date: date | None = None, end_date: date | None = None):
+    """Download raw hourly weather from Open-Meteo and save it to GCS."""
     bucket = helper.configured_bucket()
     fetched_date = date.today()
     start_date, end_date = helper.resolve_dates(start_date, end_date, fetched_date)
@@ -40,6 +42,7 @@ def fetch_weather_data(start_date: date | None = None, end_date: date | None = N
 
 
 def parse_weather_data(start_date: date | None = None, end_date: date | None = None, fetch_date: date | None = None):
+    """Clean the raw weather file into one row per hour and save the CSV."""
     if fetch_date is None:
         fetch_date = date.today()
     bucket = helper.configured_bucket()
