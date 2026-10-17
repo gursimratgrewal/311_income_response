@@ -1,10 +1,11 @@
 """Part C - clean and join the 311, Census, weather and neighborhood files, and store the result in GCS."""
 
 import io, json
-from datetime import date
 import pandas as pd
+from datetime import date
 
 from storage import upload_to_gcs
+from user_definition import JOINED_PATH, SUMMARY_PATH
 from collectors import helper, sf311, acs, weather, neighborhoods
 
 
@@ -48,16 +49,16 @@ def process(fetch_date: date | None = None, year: int = acs.ACS_YEAR, start_date
                                                   "service_request_id": "count", "hours_to_close": "median"}).reset_index()
     summary = summary.rename(columns={"service_request_id": "cases", "hours_to_close": "median_hours"})
 
-    upload_to_gcs("processed/joined.csv", joined.to_csv(index=False), content_type="text/csv", bucket=bucket)
-    upload_to_gcs("processed/summary.csv", summary.to_csv(index=False), content_type="text/csv", bucket=bucket)
+    upload_to_gcs(JOINED_PATH, joined.to_csv(index=False), content_type="text/csv", bucket=bucket)
+    upload_to_gcs(SUMMARY_PATH, summary.to_csv(index=False), content_type="text/csv", bucket=bucket)
     return {"cases": len(joined), "neighborhoods": len(summary)}
 
 
 def get_data():
     """Return the joined 311 cases for the dashboard."""
-    return json.loads(retrieve_data_from_gcs("processed/joined.csv").to_json(orient="records"))
+    return json.loads(retrieve_data_from_gcs(JOINED_PATH).to_json(orient="records"))
 
 
 def get_summary():
     """Return one row per neighborhood: income, population, number of cases, median hours to close."""
-    return json.loads(retrieve_data_from_gcs("processed/summary.csv").to_json(orient="records"))
+    return json.loads(retrieve_data_from_gcs(SUMMARY_PATH).to_json(orient="records"))

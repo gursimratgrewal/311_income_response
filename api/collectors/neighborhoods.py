@@ -6,29 +6,21 @@ from datetime import date
 from pydantic import ValidationError
 
 from . import helper
-import config
-from data_types import FetchData, StoreData, TractNeighborhood
 from storage import upload_to_gcs
-
-Neighborhood_file_path = "https://data.sfgov.org/api/views/sevw-6tgi/rows.csv?accessType=DOWNLOAD"
-
-Neighborhood_Column_names = { "geoid": "geoid",
-    "name": "tract_name",
-    "neighborhoods_analysis_boundaries": "neighborhood",
-    "sup_dist_2022": "supervisor_dist",
-}
+from data_types import FetchData, StoreData, TractNeighborhood
+from user_definition import RAW_PREFIX, NEIGHBORHOOD_URL, NEIGHBORHOOD_VARS
 
 
 def file_names(fetch_date):
     """ Cleaning neighborhood file names """
-    folder = f"{config.raw_prefix}/neighborhoods/{fetch_date}"
+    folder = f"{RAW_PREFIX}/neighborhoods/{fetch_date}"
     return f"{folder}/tract_neighborhoods_raw.csv", f"{folder}/tract_neighborhoods.csv"
 
 
 def fetch_neighborhoods():
     """ Fetching neighborhood data and save to GCS """
     bucket = helper.configured_bucket()
-    response = helper.fetch_response(Neighborhood_file_path)
+    response = helper.fetch_response(NEIGHBORHOOD_URL)
     fetched_date = date.today()
     raw_name = file_names(fetched_date)[0]
     gcs_path = upload_to_gcs(raw_name, response.content, "text/csv", bucket)
@@ -42,8 +34,8 @@ def parse_neighborhoods(fetch_date: date | None = None):
         fetch_date = date.today()
     raw_name, file_name = file_names(fetch_date)
     raw_data = helper.read_raw(raw_name, bucket)
-    df = pd.read_csv(io.BytesIO(raw_data), usecols=list(Neighborhood_Column_names.keys()), dtype=str)
-    df = df.rename(columns=Neighborhood_Column_names)
+    df = pd.read_csv(io.BytesIO(raw_data), usecols=list(NEIGHBORHOOD_VARS.keys()), dtype=str)
+    df = df.rename(columns=NEIGHBORHOOD_VARS)
     df = df.astype(object).where(df.notna(), None)
     rows = []
     skipped = 0

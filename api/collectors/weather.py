@@ -5,19 +5,14 @@ from datetime import date
 from fastapi import HTTPException
 
 from . import helper
-import config
-from data_types import FetchData, StoreData, WeatherHour
 from storage import upload_to_gcs
-
-WEATHER_URL = "https://historical-forecast-api.open-meteo.com/v1/forecast"
-SF_LAT = 37.7749
-SF_LNG = -122.4194
-WEATHER_VARS = ["temperature_2m", "precipitation", "rain", "weather_code", "wind_speed_10m"]
+from user_definition import RAW_PREFIX, WEATHER_URL, SF_LAT, SF_LNG, WEATHER_VARS, SF_TIMEZONE
+from data_types import FetchData, StoreData, WeatherHour
 
 
 def file_names(fetch_date, start_date, end_date):
     """Return the raw and cleaned file paths in the bucket for one date range."""
-    folder = f"{config.raw_prefix}/weather/{fetch_date}"
+    folder = f"{RAW_PREFIX}/weather/{fetch_date}"
     period = f"{start_date}_to_{end_date}"
     return [f"{folder}/weather_raw_{period}.json", f"{folder}/weather_{period}.csv"]
 
@@ -33,7 +28,7 @@ def fetch_weather_data(start_date: date | None = None, end_date: date | None = N
         "start_date": str(start_date),
         "end_date": str(end_date),
         "hourly": ",".join(WEATHER_VARS),
-        "timezone": "America/Los_Angeles",
+        "timezone": SF_TIMEZONE,
     }
     response = helper.fetch_response(WEATHER_URL, params=params)
     raw_name = file_names(fetched_date, start_date, end_date)[0]

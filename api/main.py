@@ -1,11 +1,12 @@
 """FastAPI routes"""
 
 from datetime import date
-
 from fastapi import FastAPI
-from collectors import acs, neighborhoods, sf311, weather
-from data_types import FetchData, StoreData
+
 import transform
+from data_types import FetchData, StoreData
+from collectors import acs, neighborhoods, sf311, weather
+
 
 app = FastAPI()
 
