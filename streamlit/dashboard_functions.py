@@ -6,16 +6,12 @@ which cleaned and joined the 311, ACS, weather and neighborhood files
 
 Neighborhood outlines for the maps come from DataSF 
 '''
+import requests
 import pandas as pd
 import pydeck as pdk # Claude Opus 5.5 recommended pydeck to produce maps 
-import requests
 
-RAINY_DAY_MM = 1.0 # Used Claude recommendation for a "light rain" in mm
-NEIGHBORHOOD_GEOJSON_URL = "https://data.sfgov.org/resource/j2bu-swwd.geojson" 
-QUARTILE_COLORS = [[239, 243, 255, 190],   # Q1 (lightest)
-                   [189, 215, 231, 190],
-                   [107, 174, 214, 190],
-                   [33, 113, 181, 190]]    # Q4 (darkest)
+from user_definition import RAINY_DAY_MM, NEIGHBORHOOD_GEOJSON_URL, QUARTILE_COLORS
+
 
 # Retrieve data from processing API
 def retrieve_data_from_api(api_server_url: str, endpoint: str) -> pd.DataFrame:

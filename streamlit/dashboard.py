@@ -6,9 +6,10 @@ File containing all of the visuals for the deployed streamlit app
         3. A barchart displaying median service time by issue type
         4. Tables summarizing the processed rows stored in the bucket
 '''
-import streamlit as st
 import pandas as pd
+import streamlit as st
 
+from user_definition import API_SERVER_URL, TOP_CATEGORIES, MAP_HEIGHT
 from dashboard_functions import (neighborhood_table, ordered_chart_data,
                                  prepare_cases, prepare_summary,
                                  quartile_geojson, quartile_map,
@@ -16,12 +17,7 @@ from dashboard_functions import (neighborhood_table, ordered_chart_data,
                                  retrieve_data_from_api,
                                  retrieve_neighborhood_shapes,
                                  summarize_resolution)
-from user_definition import api_server_url
 
-# Claude Opus 5.5 suggestion to create variables after asking how to
-# map income and weather quartiles to a map of SF
-TOP_CATEGORIES = 10      # service categories shown as sidebar checkboxes
-MAP_HEIGHT = 550         # pixel height of each neighborhood map
 
 # Another product of Claude Opus 5.5 when troubleshooting Streamlit slowdowns
 # Streamlit re-runs this script on every click, so cache the API calls
@@ -29,9 +25,8 @@ MAP_HEIGHT = 550         # pixel height of each neighborhood map
 @st.cache_data(ttl=3600, show_spinner="Loading data from the processing API...")
 def load_data() -> tuple:
     """Return (summary, cases) from the processing API's /summary and /data."""
-    summary = prepare_summary(retrieve_data_from_api(api_server_url,
-                                                     "/summary"))
-    cases = prepare_cases(retrieve_data_from_api(api_server_url, "/data"),
+    summary = prepare_summary(retrieve_data_from_api(API_SERVER_URL, "/summary"))
+    cases = prepare_cases(retrieve_data_from_api(API_SERVER_URL, "/data"),
                           summary)
     return summary, cases
 
@@ -49,7 +44,7 @@ if __name__ == '__main__':
     summary, data = load_data()
 
     if data.empty:
-        st.warning(f"No cases returned by {api_server_url}/data. "
+        st.warning(f"No cases returned by {API_SERVER_URL}/data. "
                    "Run POST /process on the processing API first.")
         st.stop()
 
