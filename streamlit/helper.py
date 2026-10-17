@@ -1,5 +1,5 @@
 '''
-Functions used by the 311 Income Response dashboard (dashboard.py).
+Functions used by the 311 Income Response dashboard.
 
 Data is pulled from the transform API (api/transform.py),
 which cleaned and joined the 311, ACS, weather and neighborhood files
