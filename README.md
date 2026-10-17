@@ -1,9 +1,9 @@
-# Does the speed of 311 Service Response in San Francisco varies by Census Tract Income level of the area.
+# Does the speed of 311 Service Response in San Francisco varies by neighborhood Income level of the area.
 **Team Members**
 |  Name        |  GithubID       |    Task                |
 |--------------|-----------------|------------------------|
 | Yunfan       | 399441537       |  contract, docker, Cloud Scheduler job with deployment instructions|
-| Gursimrat    | gursimratgrewal |  github repo, README.md, complete code fetching <file> data source, Cloud Run services  |
+| Gursimrat    | gursimratgrewal |  github repo, README.md, complete code for fetching <file> and one API file data source, Cloud Run services  |
 | Eric         | E_Smith_359     | gcp project and bucket, dashboard with graph/chart, Cloud Run services|
 | Vansh        | VanshS29362     | draft code fetching api/file data source, complete code fetching <api> data source, Cloud Run services|
 | Prashasti    | Prashasti9      | define data structure, code receive and parse/transform data, store into gcp, define functions used by dashboard, Cloud Run services|
@@ -20,7 +20,8 @@ We combine San Francisco 311 service request data, American Community Survey dat
 
 | Name | URL| Acquisition method | Data | Access requirements|
 |------|----|--------------------|------|--------------------|
-| 311 Cases, DataSF | https://data.sf.gov/City-Infrastructure/311-Cases/vw6y-z8j6/about_data | File | SF311 cases with time and location since 2008 | No requirements
+| 311 Cases, DataSF | https://data.sfgov.org/City-Infrastructure/311-Cases/vw6y-z8j6 | API | SF311 cases with time and location since 2008 | No requirements
+| Analysis Neighborhoods – 2020 census tracts assigned to neighborhoods, DataSF | https://data.sfgov.org/d/sevw-6tgi | File (CSV download) | Maps each SF 2020 census tract (GEOID) to one of 41 Analysis Neighborhoods | No requirements |
 | American Community Survey 5-Year Data | https://www.census.gov/data/developers/data-sets/acs-5year.html | API | we only need the Household Income and Total Population and location related data from this source | API key needed, free to register, has ToS |
 | Historical Forecast API, Open-Meteo | https://open-meteo.com/en/docs/historical-forecast-api | API | time, location and weather condition | no more than 10,000 daily API calls, no other requirements |
 
@@ -29,7 +30,7 @@ We combine San Francisco 311 service request data, American Community Survey dat
 **Integration Goal**
 
 When we look at all these different datasets, we can see if the service response differs across income levels taking into consideration other factors like type of request, size of the population and weather of the area.Combining these sources allows us to analyze whether service response times vary across income levels while considering request type, population, and weather, which cannot be observed from single dataset.
-We will join 311 latitude and longitude to Census tracts, then use the tract GEOID to join ACS income and population data. Weather data will be joined by date time and lat lon.
+For each 311 case we calculate the hours to close. Income and population are joined to the tract to neighborhood file on the tract GEOID, then averaged income and summed population per neighborhood. 311 cases are joined to that table on neighborhood. Weather is summarized per day and joined to 311 cases by date.
 
 -------------------------------------------------------------------------
 
@@ -59,19 +60,22 @@ We will join 311 latitude and longitude to Census tracts, then use the tract GEO
   Create your GCP service account key by following these instructions:-
   
   GCP Console → IAM & Admin → Service Accounts → choose the account → Keys → Add key → Create new key → JSON
+
+  Save .json outside the repo folder and never commit. 
   
   Create your .env file from the template and fill in your own values
   ```bash
   cp .env_template .env
   ```
 ```
-  STORAGE_BACKEND=gcs
   GCP_PROJECT_ID=your gcp project id
   GCP_BUCKET_NAME=your gcp bucket name
   GCP_SERVICE_ACCOUNT_KEY=path/to/your-service-account-key.json
   LOCAL_OUTPUT_DIR=./data
   RAW_PREFIX=raw
   HTTP_TIMEOUT_SECONDS=120
+  CENSUS_API_KEY=your-census-api-key
+  API_SERVICE_URL=http://127.0.0.1:8000
 ```
 
 
@@ -80,27 +84,32 @@ We will join 311 latitude and longitude to Census tracts, then use the tract GEO
  cd api
  fastapi dev main.py
 ```
+Open http://127.0.0.1:8000/docs to see all routes.
 
-6. Run Part E - clean the 311 data (process_sf311.py)
-```bash
- fastapi dev process_sf311.py --port=8001
-```
-Open http://127.0.0.1:8001/docs -> POST /process/sf311 -> Try it out, and paste the raw file path returned by /ingest/sf311, e.g.
-```json
-{"file_name": "raw/sf311/requested_2026-09-01_to_2026-09-02/run_20261003T175316Z/part-00001.ndjson"}
-```
-This reads the raw file from the bucket, cleans it, and saves it under processed/sf311/... in the same bucket.
+6. Fetch the raw data
+  - GET `/fetch/sf311`
+  - GET `/fetch/weather`
+  - GET `/fetch/acs`
+  - GET `/fetch/neighborhoods`
 
-7. Run file ingestion (file_data_fetch.py)
-```bash
-cd ../ingestion
+7. Clean raw data
+  - GET `/parse/sf311`
+  - GET `/parse/weather`
+  - GET `/parse/acs`
+  - GET `/parse/neighborhoods`
+
+8. Join all the things
+ - POST `/process` saves `processed/joined.csv` and `processed/summary.csv` to the bucket
+ - GET `/data` and GET `/summary` return them as JSON  
+
+9. Run the dashboard in new terminal
+    
+ ```bash
+cd streamlit
 pip install -r requirements.txt
-fastapi dev file_data_fetch.py --port=8002
+streamlit run dashboard.py
 ```
-Then follow these steps: 
-Open http://127.0.0.1:8002/docs -> Get/fetch -> Try it out, set max_rows=1000 to test.
-
-This will download SF 311 CSV file and validate rows with data_type.py.
+Open http://localhost:8501
 
    
 
