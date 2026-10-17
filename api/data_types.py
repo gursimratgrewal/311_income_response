@@ -1,7 +1,7 @@
 """Shared data types for SF 311, Census ACS, neighborhoods, and weather."""
 
-from datetime import date, datetime
 from pydantic import BaseModel
+from datetime import date, datetime
 
 
 class ACSTract(BaseModel):

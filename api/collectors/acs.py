@@ -1,26 +1,18 @@
 """Download and clean Census ACS data."""
 
-
 import json
 from datetime import date
 from fastapi import HTTPException
 
 from . import helper
-import config
-from data_types import ACSTract, FetchData, StoreData
 from storage import upload_to_gcs
-
-ACS_URL = "https://api.census.gov/data/{year}/acs/acs5"
-ACS_YEAR = 2024
-
-STATE_FIPS = "06"
-
-COUNTY_FIPS = "075"
+from data_types import ACSTract, FetchData, StoreData
+from user_definition import census_api_key, RAW_PREFIX, ACS_URL, ACS_YEAR, ACS_VARS, STATE_FIPS, COUNTY_FIPS
 
 
 def file_names(fetch_date, year):
     """Return the raw and cleaned file paths in the bucket for one ACS year."""
-    folder = f"{config.raw_prefix}/acs/{fetch_date}"
+    folder = f"{RAW_PREFIX}/acs/{fetch_date}"
     return [f"{folder}/acs_raw_{year}.json", f"{folder}/acs_{year}.csv"]
 
 
@@ -28,10 +20,10 @@ def fetch_acs_data(year: int = ACS_YEAR):
     """Download raw Census data and save it to GCS. """
     bucket = helper.configured_bucket()
     params = {
-        "get": "NAME,B19013_001E,B01003_001E",
+        "get": ACS_VARS,
         "for": "tract:*",
         "in": f"state:{STATE_FIPS} county:{COUNTY_FIPS}",
-        "key": config.census_api_key,
+        "key": census_api_key,
     }
     response = helper.fetch_response(ACS_URL.format(year=year), params=params)
     try:

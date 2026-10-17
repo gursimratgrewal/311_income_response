@@ -1,17 +1,19 @@
 """gcs connection, upload and download"""
 
-import config
 from google.cloud import storage
 from google.oauth2 import service_account
 
+from user_definition import project_id, bucket_name, service_account_key
+
+
 def get_bucket():
     """Returns the GCS bucket."""
-    if config.service_account_key:
-        cred = service_account.Credentials.from_service_account_file(config.service_account_key)
-        client = storage.Client(credentials=cred, project=config.project_id)
+    if service_account_key:
+        cred = service_account.Credentials.from_service_account_file(service_account_key)
+        client = storage.Client(credentials=cred, project=project_id)
     else:
-        client = storage.Client(project=config.project_id)
-    return client.bucket(config.bucket_name)
+        client = storage.Client(project=project_id)
+    return client.bucket(bucket_name)
 
 
 def upload_to_gcs(file_name, data, content_type, bucket):
