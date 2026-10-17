@@ -71,9 +71,6 @@ For each 311 case we calculate the hours to close. Income and population are joi
   GCP_PROJECT_ID=your gcp project id
   GCP_BUCKET_NAME=your gcp bucket name
   GCP_SERVICE_ACCOUNT_KEY=path/to/your-service-account-key.json
-  LOCAL_OUTPUT_DIR=./data
-  RAW_PREFIX=raw
-  HTTP_TIMEOUT_SECONDS=120
   CENSUS_API_KEY=your-census-api-key
   API_SERVICE_URL=http://127.0.0.1:8000
 ```
@@ -111,6 +108,22 @@ streamlit run streamlit_app.py
 ```
 Open http://localhost:8501
 
+**Deploy to GCP**
+
+1. Log in and make sure your `.env` is filled in, including the key path:
+```bash
+gcloud auth login
+```
+2. Run the deploy script from the repo root:
+```bash
+bash gcloud_command.sh
+```
+It will:-
+- store the service account key in Secret Manager
+- deploy the API (`sf311-api-server`), one fetch and one parse service per source (`sf311-fetch-<source>`, `sf311-parse-<source>`), and the dashboard (`sf311-webapp`) to Cloud Run
+- create Cloud Scheduler jobs: fetch at 1:00 AM, parse at 2:00 AM, process at 3:00 AM daily
+
+
    
 
 
@@ -121,29 +134,31 @@ Open http://localhost:8501
 311_income_response/
 ├── api/
 │   ├── collectors/
-│   │   ├── acs.py               # Collects census ACS income and population (API fetch)
-│   │   ├── helper.py            # Shared helper functions used.
+│   │   ├── acs.py               # Collects Census ACS income and population (API fetch)
+│   │   ├── helper.py            # Shared helper functions for the collectors
 │   │   ├── neighborhoods.py     # Downloads the SF census tract to neighborhood CSV file (File based acquisition)
 │   │   ├── sf311.py             # Fetches SF 311 cases for a date range (API fetch)
 │   │   └── weather.py           # Fetches hourly SF weather from Open-Meteo (API fetch)
-│   ├── user_definition.py       # Loads custom variables 
-│   ├── data_types.py            # Data types for every source
-│   ├── Dockerfile               # Container setup for the API service 
+│   ├── data_types.py            # Pydantic data types for every source
+│   ├── Dockerfile               # Container setup for the API service
 │   ├── main.py                  # FastAPI app with all the routes
 │   ├── requirements.txt         # Python dependencies for the API
 │   ├── storage.py               # GCS connection, upload and download
-│   └── transform.py             # Cleans and joins 311, Census, weather, and neighborhood files, stores result in GCS
+│   ├── transform.py             # Cleans and joins 311, Census, weather and neighborhood files, stores result in GCS
+│   └── user_definition.py       # Settings: env variables, source URLs, column maps and constants
 ├── streamlit/
-│   ├── streamlit_app.py         # Streamlit dashboard app
-│   ├── helper.py                # Helper functions for the dashboard
-│   ├── Dockerfile               # Container setup for the dashboard 
+│   ├── Dockerfile               # Container setup for the dashboard
+│   ├── helper.py                # Helper functions for the dashboard (data loading, quartiles, maps)
 │   ├── requirements.txt         # Python dependencies for the dashboard
-│   └── user_definition.py       # Dashboard settings
-├── gcloud_commands.sh           # Deploys the service.
-├── config.sh                    # Settings for the deploy script
+│   ├── streamlit_app.py         # Streamlit dashboard app
+│   └── user_definition.py       # Dashboard settings: API URL, map and chart constants
 ├── .env_template                # Template for environment variables (copy to .env)
+├── .gitignore                   # Files Git should ignore
+├── config.sh                    # Deploy settings: region, ports, service names, schedules (reads .env)
+├── gcloud_command.sh            # Deploys all Cloud Run services and Cloud Scheduler jobs
 └── README.md                    # Project documentation
 ```
+
 
 
 
