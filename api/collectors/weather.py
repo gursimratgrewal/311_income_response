@@ -52,7 +52,7 @@ def parse_weather_data(start_date: date | None = None, end_date: date | None = N
     try:
         table = json.loads(raw_data)
     except ValueError:
-        raise HTTPException(status_code=422, detail="Saved weather file is not valid JSON") from None
+        raise HTTPException(status_code=422, detail="Saved weather file is not valid JSON")
     hourly = table["hourly"]
     records = []
     for i in range(len(hourly["time"])):
