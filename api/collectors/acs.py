@@ -19,11 +19,13 @@ COUNTY_FIPS = "075"
 
 
 def file_names(fetch_date, year):
+    """Return the raw and cleaned file paths in the bucket for one ACS year."""
     folder = f"{config.raw_prefix}/acs/{fetch_date}"
     return [f"{folder}/acs_raw_{year}.json", f"{folder}/acs_{year}.csv"]
 
 
 def fetch_acs_data(year: int = ACS_YEAR):
+    """Download raw Census data and save it to GCS. """
     bucket = helper.configured_bucket()
     params = {
         "get": "NAME,B19013_001E,B01003_001E",
@@ -44,7 +46,7 @@ def fetch_acs_data(year: int = ACS_YEAR):
 
 
 def parse_acs_data(year: int = ACS_YEAR, fetch_date: date | None = None):
-    """Gets the median household income and population for every SF census tract. Missing estimates are saved as blank."""
+    """ Clean the raw Census file and save the CSV. Missing estimates are saved as blank."""
     if fetch_date is None:
         fetch_date = date.today()
     bucket = helper.configured_bucket()
