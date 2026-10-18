@@ -68,8 +68,8 @@ For each 311 case we calculate the hours to close. Income and population are joi
   cp .env_template .env
   ```
 ```
-  GCP_PROJECT_ID=your gcp project id
-  GCP_BUCKET_NAME=your gcp bucket name
+  GCP_PROJECT_ID=your-gcp-project-id
+  GCP_BUCKET_NAME=your-gcp-bucket-name
   GCP_SERVICE_ACCOUNT_KEY=path/to/your-service-account-key.json
   CENSUS_API_KEY=your-census-api-key
   API_SERVICE_URL=http://127.0.0.1:8000
@@ -121,7 +121,7 @@ bash gcloud_command.sh
 It will:-
 - store the service account key in Secret Manager
 - deploy the API (`sf311-api-server`), one fetch and one parse service per source (`sf311-fetch-<source>`, `sf311-parse-<source>`), and the dashboard (`sf311-webapp`) to Cloud Run
-- create Cloud Scheduler jobs: fetch at 1:00 AM, parse at 2:00 AM, process at 3:00 AM daily
+- create Cloud Scheduler jobs: fetch at 1:00 AM, parse at 2:00 AM, process at 3:00 AM daily, Los Angeles time
 
 
    
